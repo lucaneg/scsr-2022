@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+   	id 'eclipse'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.github.unive-ssv:lisa-core:0.1b5'
+    implementation 'com.github.unive-ssv:lisa-imp:0.1b5'
+    testImplementation 'junit:junit:4.12'
+}
