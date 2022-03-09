@@ -23,7 +23,7 @@ public class ReachingDefinitionsTest {
 		LiSAConfiguration conf = new LiSAConfiguration();
 		conf.setJsonOutput(true);
 		conf.setDumpAnalysis(true);
-		conf.setWorkdir("outputs");
+		conf.setWorkdir("outputs-rd");
 		conf.setAbstractState(
 				new SimpleAbstractState<>(
 						new MonolithicHeap(), 
