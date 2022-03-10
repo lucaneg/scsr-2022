@@ -65,7 +65,7 @@ public class AvailableExpressions
 	}
 
 	public Collection<Identifier> getInvolvedIdentifiers(ValueExpression expression) {
-		Collection<Identifier> result = new HashSet<>();
+		Set<Identifier> result = new HashSet<>();
 
 		if (expression instanceof Identifier) {
 			result.add((Identifier) expression);
