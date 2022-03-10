@@ -16,9 +16,14 @@ class availableExpressions {
 	}
 	
 	test3() {
-		def x = 0;
-		def i = 0;
-		for (; i < 5; i = i + 1)
-			x = "p";
+		def a = 3;
+		def b = 4;
+		if (a < b) {
+			def x = b - a;
+			def y = a - b;
+		} else {
+			def y = b - a;
+			def x = a - b;
+		}
 	}
 }
