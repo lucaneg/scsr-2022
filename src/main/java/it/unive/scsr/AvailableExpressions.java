@@ -1,6 +1,129 @@
 package it.unive.scsr;
 
-public class AvailableExpressions {
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+
+import it.unive.lisa.analysis.ScopeToken;
+import it.unive.lisa.analysis.SemanticException;
+import it.unive.lisa.analysis.dataflow.DataflowElement;
+import it.unive.lisa.analysis.dataflow.DefiniteForwardDataflowDomain;
+import it.unive.lisa.analysis.representation.DomainRepresentation;
+import it.unive.lisa.analysis.representation.StringRepresentation;
+import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.BinaryExpression;
+import it.unive.lisa.symbolic.value.Identifier;
+import it.unive.lisa.symbolic.value.TernaryExpression;
+import it.unive.lisa.symbolic.value.UnaryExpression;
+import it.unive.lisa.symbolic.value.ValueExpression;
+
+public class AvailableExpressions
+	implements DataflowElement<
+				DefiniteForwardDataflowDomain<AvailableExpressions>,
+				AvailableExpressions> {
+
+	//private final Identifier id;
+	//private final ProgramPoint point;
+	private final ValueExpression expression;
+
+	public AvailableExpressions() {
+		this(null);
+	}
+
+	public AvailableExpressions(ValueExpression expression) {
+		this.expression = expression;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(expression);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		AvailableExpressions other = (AvailableExpressions) obj;
+		return Objects.equals(expression, other.expression);
+	}
+
+	/*@Override
+	public Collection<Identifier> getInvolvedIdentifiers() {
+		Set<Identifier> result = new HashSet<>();
+		result.add(id);
+		return result;
+	}*/
+
+	@Override
+	public Collection<Identifier> getInvolvedIdentifiers() {
+		return getInvolvedIdentifiers(this.expression);
+	}
+
+	public Collection<Identifier> getInvolvedIdentifiers(ValueExpression expression) {
+		Collection<Identifier> result = new HashSet<>();
+
+		if (expression instanceof Identifier) {
+			result.add((Identifier) expression);
+		} else if (expression instanceof UnaryExpression) {
+			UnaryExpression unary = (UnaryExpression) expression;
+			result.addAll(getInvolvedIdentifiers((ValueExpression) unary.getExpression()));
+		} else if (expression instanceof BinaryExpression) {
+			BinaryExpression binary = (BinaryExpression) expression;
+			result.addAll(getInvolvedIdentifiers((ValueExpression) binary.getLeft()));
+			result.addAll(getInvolvedIdentifiers((ValueExpression) binary.getRight()));
+		} else if (expression instanceof TernaryExpression) {
+			TernaryExpression ternary = (TernaryExpression) expression;
+			result.addAll(getInvolvedIdentifiers((ValueExpression) ternary.getLeft()));
+			result.addAll(getInvolvedIdentifiers((ValueExpression) ternary.getRight()));
+			result.addAll(getInvolvedIdentifiers((ValueExpression) ternary.getMiddle()));
+		}
+
+		return result;
+	}
+
+	@Override
+	public Collection<AvailableExpressions> gen(Identifier id, ValueExpression expression, ProgramPoint pp,
+			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
+		Set<AvailableExpressions> result = new HashSet<>();
+		AvailableExpressions ae = new AvailableExpressions(expression);
+		if (!ae.getInvolvedIdentifiers().contains(id))
+				result.add(ae);
+		return result;
+	}
+
+	@Override
+	public Collection<AvailableExpressions> gen(ValueExpression expression, ProgramPoint pp,
+			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
+		return new HashSet<>();
+	}
+
+	@Override
+	public Collection<AvailableExpressions> kill(Identifier id, ValueExpression expression, ProgramPoint pp,
+			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
+		Set<AvailableExpressions> result = new HashSet<>();
+
+		for (AvailableExpressions ae : domain.getDataflowElements()) {
+			//System.out.println(ae.expression.toString());
+			//System.out.println(ae.toString());
+			//System.out.println(id.toString());
+			if (ae.getInvolvedIdentifiers().contains(id))
+				result.add(ae);
+				//break;
+		}
+
+		return result;
+	}
+
+	@Override
+	public Collection<AvailableExpressions> kill(ValueExpression expression, ProgramPoint pp,
+			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
+		return new HashSet<>();
+	}
 
 
 	// IMPLEMENTATION NOTE:
@@ -11,19 +134,19 @@ public class AvailableExpressions {
 	// of "expression". If you don't have a field of type ValueExpression in your solution,
 	// then you should make sure that what you are doing is correct :)
 	
-//	@Override
-//	public DomainRepresentation representation() {
-//		return new StringRepresentation(expression);
-//	}
-//
-//	@Override
-//	public AvailableExpressions pushScope(ScopeToken scope) throws SemanticException {
-//		return new AvailableExpressions((ValueExpression) expression.pushScope(scope));
-//	}
-//
-//	@Override
-//	public AvailableExpressions popScope(ScopeToken scope) throws SemanticException {
-//		return new AvailableExpressions((ValueExpression) expression.popScope(scope));
-//	}
+	@Override
+	public DomainRepresentation representation() {
+		return new StringRepresentation(expression);
+	}
+
+	@Override
+	public AvailableExpressions pushScope(ScopeToken scope) throws SemanticException {
+		return new AvailableExpressions((ValueExpression) expression.pushScope(scope));
+	}
+
+	@Override
+	public AvailableExpressions popScope(ScopeToken scope) throws SemanticException {
+		return new AvailableExpressions((ValueExpression) expression.popScope(scope));
+	}
 }
 

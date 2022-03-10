@@ -24,13 +24,13 @@ public class ReachingDefinitions
 				ReachingDefinitions> {
 
 	private final Identifier id;
-	private final CodeLocation point;
+	private final ProgramPoint point;
 
 	public ReachingDefinitions() {
 		this(null, null);
 	}
 
-	public ReachingDefinitions(Identifier id, CodeLocation point) {
+	public ReachingDefinitions(Identifier id, ProgramPoint point) {
 		this.id = id;
 		this.point = point;
 	}
@@ -63,7 +63,7 @@ public class ReachingDefinitions
 	public Collection<ReachingDefinitions> gen(Identifier id, ValueExpression expression, ProgramPoint pp,
 			PossibleForwardDataflowDomain<ReachingDefinitions> domain) throws SemanticException {
 		Set<ReachingDefinitions> result = new HashSet<>();
-		ReachingDefinitions rd = new ReachingDefinitions(id, pp.getLocation());
+		ReachingDefinitions rd = new ReachingDefinitions(id, pp);
 		result.add(rd);
 		return result;
 	}
