@@ -1,0 +1,50 @@
+class availableExpressions{
+
+	test1() {
+		def i = 5;
+		def x = "s";
+	}
+	
+	test2() {
+		def x = 0;
+		def i = 0;
+		if (i > 5)
+			x = 10;
+		else
+			x = "s";
+	}
+	
+	test3() {
+		def x = 0;
+		def i = 0;
+		for (; i < 5; i = i + 1)
+			x = "p";
+	}
+
+
+    test4(){
+        def x = 10;
+        def y = x + x;
+        def a = y * 2;
+        x = -x;
+        y = x;
+    }
+
+    test5(){
+        def c = 99;
+        def animal = "mammal";
+        if(c > 2){
+            animal = "bird";
+        }
+        else{
+            animal = "fish";
+        }
+        def y = 1 + 4;
+        y = y + 3;
+        y = -y;
+        c = 12;
+        def x = 2 * y;
+        y = x + 1;
+        def a = x + y;
+   }
+}

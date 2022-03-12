@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import it.unive.lisa.symbolic.value.ValueExpression;
+import it.unive.lisa.symbolic.value.Variable;
 import it.unive.lisa.analysis.ScopeToken;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.dataflow.DataflowElement;
@@ -53,13 +54,18 @@ public class AvailableExpressions
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (getClass() != obj.getClass()) {
 			return false;
+		}
+
 		AvailableExpressions other = (AvailableExpressions) obj;
+
 		return Objects.equals(expression, other.expression) && Objects.equals(programPoint, other.programPoint);
 	}
 
@@ -83,8 +89,15 @@ public class AvailableExpressions
 			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
 
 		Set<AvailableExpressions> result = new HashSet<>();
-		AvailableExpressions ae = new AvailableExpressions(expression, pp);
-		result.add(ae);
+
+		if(expression.getClass() != Identifier.class && expression.getClass() != Constant.class && expression.getClass()!=Variable.class){
+			AvailableExpressions ae = new AvailableExpressions(expression, pp);
+			result.add(ae);
+		}
+		// if (ae.getInvolvedIdentifiers().size() > 0) {
+		// result.add(ae);
+		// }
+
 		return result;
 	}
 
@@ -93,8 +106,15 @@ public class AvailableExpressions
 			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
 
 		Set<AvailableExpressions> result = new HashSet<>();
-		return result;
 
+		AvailableExpressions ae = new AvailableExpressions(expression, pp);
+
+		if (ae.getInvolvedIdentifiers().size() > 0 && (expression.getClass() == BinaryExpression.class
+				|| expression.getClass() == TernaryExpression.class)) {
+			result.add(ae);
+		}
+
+		return result;
 	}
 
 	@Override
@@ -153,6 +173,11 @@ public class AvailableExpressions
 					@Override
 					public Collection<Identifier> visit(UnaryExpression expression, Collection<Identifier> arg,
 							Object... params) throws SemanticException {
+						if (expression.getExpression().getClass() == Identifier.class
+								|| expression.getExpression().getClass() == Variable.class) {
+							result.add((Identifier) expression.getExpression());
+						}
+
 						return result;
 					}
 
@@ -160,9 +185,16 @@ public class AvailableExpressions
 					public Collection<Identifier> visit(BinaryExpression expression, Collection<Identifier> left,
 							Collection<Identifier> right, Object... params) throws SemanticException {
 
-						if (expression.getRight().getClass() == Identifier.class) {
+						if (expression.getLeft().getClass() == Identifier.class
+								|| expression.getLeft().getClass() == Variable.class) {
+							result.add((Identifier) expression.getLeft());
+						}
+
+						if (expression.getRight().getClass() == Identifier.class
+								|| expression.getRight().getClass() == Variable.class) {
 							result.add((Identifier) expression.getRight());
 						}
+
 						return result;
 					}
 
@@ -171,8 +203,19 @@ public class AvailableExpressions
 							Collection<Identifier> middle, Collection<Identifier> right, Object... params)
 							throws SemanticException {
 
-						if (expression.getRight().getClass() == Identifier.class) {
+						if (expression.getLeft().getClass() == Identifier.class
+								|| expression.getLeft().getClass() == Variable.class) {
+							result.add((Identifier) expression.getLeft());
+						}
+
+						if (expression.getRight().getClass() == Identifier.class
+								|| expression.getRight().getClass() == Variable.class) {
 							result.add((Identifier) expression.getRight());
+						}
+
+						if (expression.getMiddle().getClass() == Identifier.class
+								|| expression.getMiddle().getClass() == Variable.class) {
+							result.add((Identifier) expression.getMiddle());
 						}
 						return result;
 					}
