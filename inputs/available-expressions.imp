@@ -1,0 +1,46 @@
+class AvailableExpressions {
+
+    dataFlowTest() {
+        def a = 10;
+        def b = 15;
+        def x = a + b;
+        def y = a * b;
+
+        while (y > a + b) {
+            a = a + 1;
+            x = a + b;
+        }
+    }
+
+    veryBusyTest() {
+        def a = 1;
+        def b = 2;
+
+        if (a > b) {
+            def x = b - a;
+            def y = a - b;
+        } else {
+            def y = b - a;
+            def x = a - b;
+        }
+
+        a = 2;
+        b = 1;
+
+        if (a > b) {
+            def x = b - a;
+            def y = a - b;
+        } else {
+            def y = b - a;
+            def x = a - b;
+        }
+    }
+
+    testingNullCase() {
+        def a = null;
+        def b = 10;
+        def c = 20;
+        def z = b * c;
+    }
+
+}
