@@ -8,64 +8,87 @@ import java.util.Set;
 import it.unive.lisa.analysis.ScopeToken;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.dataflow.DataflowElement;
-import it.unive.lisa.analysis.dataflow.PossibleForwardDataflowDomain;
+import it.unive.lisa.analysis.dataflow.DefiniteForwardDataflowDomain;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
+import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
 
 public class AvailableExpressions 
 			 	implements DataflowElement<
-						PossibleForwardDataflowDomain<AvailableExpressions>,
+						DefiniteForwardDataflowDomain<AvailableExpressions>,
 						AvailableExpressions>{
+
 	private final ValueExpression expression;
+	private final Identifier ident;
+	private final CodeLocation point;
 	
-	public AvailableExpressions(ValueExpression expression) {
+	public AvailableExpressions(ValueExpression expression, Identifier ident, CodeLocation point) {
 		this.expression = expression;
+		this.ident = ident;
+		this.point = point;
+	}
+	
+	public AvailableExpressions() {
+		this(null, null, null);
 	}
 	
 	@Override
 	public Collection<Identifier> getInvolvedIdentifiers() {
-		// TODO Auto-generated method stub
-		return null;
+		Set<Identifier> result = new HashSet<>();
+		result.add(ident);
+		return result;
 	}
 
 	@Override
 	public Collection<AvailableExpressions> gen(Identifier id, ValueExpression expression, ProgramPoint pp,
-			PossibleForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
+			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
 		
 		Set<AvailableExpressions> result = new HashSet<>();
-		AvailableExpressions rd = new AvailableExpressions(expression);
-		result.add(rd);
+		if(!expression.getStaticType().isNumericType() && !expression.getStaticType().isBooleanType() && !expression.getStaticType().isStringType() && !expression.getStaticType().isVoidType()) {
+			AvailableExpressions ae = new AvailableExpressions(expression, id, pp.getLocation());
+			result.add(ae);
+		}
 		return result;
 	}
 
-
-
 	@Override
 	public Collection<AvailableExpressions> gen(ValueExpression expression, ProgramPoint pp,
-			PossibleForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
+			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
 		return new HashSet<>();
 	}
 	
-	@Override
-	public Collection<AvailableExpressions> kill(Identifier id, ValueExpression expression, ProgramPoint pp,
-			PossibleForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
-		// TODO Auto-generated method stub
-		return null;
+	private boolean isPresent(Identifier id, String exp) {
+		String i = "" + id;
+		return exp.contains(i);
 	}
 
+	@Override
+	public Collection<AvailableExpressions> kill(Identifier id, ValueExpression expression, ProgramPoint pp,
+			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
+		
+		Set<AvailableExpressions> result = new HashSet<>();
+
+		for (AvailableExpressions ae : domain.getDataflowElements()) {
+			String exp = ae.expression.toString();;
+			if (isPresent(id, exp)) {
+				result.add(ae);
+			}
+		}
+		return result;
+	}
 
 	@Override
 	public Collection<AvailableExpressions> kill(ValueExpression expression, ProgramPoint pp,
-			PossibleForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
+			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
 		return new HashSet<>();
 	}
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(expression);
+		return Objects.hash(expression, ident, point);
 	}
 
 	@Override
@@ -77,16 +100,9 @@ public class AvailableExpressions
 		if (getClass() != obj.getClass())
 			return false;
 		AvailableExpressions other = (AvailableExpressions) obj;
-		return Objects.equals(expression, other.expression);
+		return Objects.equals(expression, other.expression) && Objects.equals(ident, other.ident)
+				&& Objects.equals(point, other.point);
 	}
-	
-	//IMPLEMENTATION NOTE:
-		// the code below is outside of the scope of the course. You can uncomment it to get
-		// your code to compile. Beware that the code is written expecting that a field named 
-		// "expression" of type ValueExpression exists in this class: if you name it differently,
-		// change also the code below to make it work by just using the name of your choice instead
-		// of "expression". If you don't have a field of type ValueExpression in your solution,
-		// then you should make sure that what you are doing is correct :)
 	
 	@Override
 	public DomainRepresentation representation() {
@@ -95,12 +111,12 @@ public class AvailableExpressions
 
 	@Override
 	public AvailableExpressions pushScope(ScopeToken scope) throws SemanticException {
-		return new AvailableExpressions((ValueExpression) expression.pushScope(scope));
+		return new AvailableExpressions((ValueExpression) expression.pushScope(scope), ident, point);
 	}
 
 	@Override
 	public AvailableExpressions popScope(ScopeToken scope) throws SemanticException {
-		return new AvailableExpressions((ValueExpression) expression.popScope(scope));
+		return new AvailableExpressions((ValueExpression) expression.popScope(scope), ident, point);
 	}
 }
 

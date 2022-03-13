@@ -62,6 +62,7 @@ public class ReachingDefinitions
 	@Override
 	public Collection<ReachingDefinitions> gen(Identifier id, ValueExpression expression, ProgramPoint pp,
 			PossibleForwardDataflowDomain<ReachingDefinitions> domain) throws SemanticException {
+		
 		Set<ReachingDefinitions> result = new HashSet<>();
 		ReachingDefinitions rd = new ReachingDefinitions(id, pp.getLocation());
 		result.add(rd);
@@ -78,6 +79,8 @@ public class ReachingDefinitions
 	public Collection<ReachingDefinitions> kill(Identifier id, ValueExpression expression, ProgramPoint pp,
 			PossibleForwardDataflowDomain<ReachingDefinitions> domain) throws SemanticException {
 		Set<ReachingDefinitions> result = new HashSet<>();
+		
+		System.out.println("DataFlowElements: " + domain);
 
 		for (ReachingDefinitions rd : domain.getDataflowElements())
 			if (rd.id.equals(id))
