@@ -12,8 +12,7 @@ import it.unive.lisa.analysis.dataflow.DefiniteForwardDataflowDomain;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.symbolic.value.Identifier;
-import it.unive.lisa.symbolic.value.ValueExpression;
+import it.unive.lisa.symbolic.value.*;
 
 public class AvailableExpressions implements DataflowElement<DefiniteForwardDataflowDomain<AvailableExpressions>, AvailableExpressions> {
 
@@ -69,10 +68,38 @@ public class AvailableExpressions implements DataflowElement<DefiniteForwardData
 
 	@Override
 	public Collection<Identifier> getInvolvedIdentifiers() {
-		return null;
+		return getOperands(expression);
 	}
 
-    @Override
+	private static Collection<Identifier> getOperands(ValueExpression expression) {
+		Collection<Identifier> hashSet = new HashSet<>();
+
+		if (expression == null)
+			return hashSet;
+
+		if (expression instanceof Identifier)
+			hashSet.add((Identifier) expression);
+
+		if (expression instanceof UnaryExpression)
+			hashSet.addAll(getOperands((ValueExpression) ((UnaryExpression) expression).getExpression()));
+
+		if (expression instanceof BinaryExpression) {
+			BinaryExpression binary = (BinaryExpression) expression;
+			hashSet.addAll(getOperands((ValueExpression) binary.getLeft()));
+			hashSet.addAll(getOperands((ValueExpression) binary.getRight()));
+		}
+
+		if (expression instanceof TernaryExpression) {
+			TernaryExpression ternary = (TernaryExpression) expression;
+			hashSet.addAll(getOperands((ValueExpression) ternary.getLeft()));
+			hashSet.addAll(getOperands((ValueExpression) ternary.getMiddle()));
+			hashSet.addAll(getOperands((ValueExpression) ternary.getRight()));
+		}
+
+		return hashSet;
+	}
+
+	@Override
 	public Collection<AvailableExpressions> gen(Identifier id, ValueExpression expression, ProgramPoint pp,
 			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
 		Set<AvailableExpressions> result = new HashSet<>();
