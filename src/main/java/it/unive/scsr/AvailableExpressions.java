@@ -13,8 +13,14 @@ import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.SymbolicExpression;
+import it.unive.lisa.symbolic.value.BinaryExpression;
+import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.Identifier;
+import it.unive.lisa.symbolic.value.TernaryExpression;
+import it.unive.lisa.symbolic.value.UnaryExpression;
 import it.unive.lisa.symbolic.value.ValueExpression;
+import it.unive.lisa.symbolic.value.Variable;
 
 public class AvailableExpressions 
 			 	implements DataflowElement<
@@ -22,12 +28,12 @@ public class AvailableExpressions
 						AvailableExpressions>{
 
 	private final ValueExpression expression;
-	private final Identifier ident;
+	private final Identifier id;
 	private final CodeLocation point;
 	
-	public AvailableExpressions(ValueExpression expression, Identifier ident, CodeLocation point) {
+	public AvailableExpressions(ValueExpression expression, Identifier id, CodeLocation point) {
 		this.expression = expression;
-		this.ident = ident;
+		this.id = id;
 		this.point = point;
 	}
 	
@@ -38,8 +44,29 @@ public class AvailableExpressions
 	@Override
 	public Collection<Identifier> getInvolvedIdentifiers() {
 		Set<Identifier> result = new HashSet<>();
-		result.add(ident);
+		result.add(id);
 		return result;
+	}
+	
+	private boolean canBeAdded(SymbolicExpression exp) {
+		
+		if(exp instanceof Constant) {
+			return false;
+		}
+		
+		if(exp instanceof Variable) {
+			return true;
+		}
+		
+		if(exp instanceof BinaryExpression) {
+			return canBeAdded(((BinaryExpression) exp).getLeft()) || canBeAdded(((BinaryExpression) exp).getRight());
+		}
+		
+		if(exp instanceof TernaryExpression) {
+			return canBeAdded(((TernaryExpression) exp).getLeft()) || canBeAdded(((TernaryExpression) exp).getMiddle())|| canBeAdded(((TernaryExpression) exp).getRight());
+		}
+		
+		return false;
 	}
 
 	@Override
@@ -47,17 +74,11 @@ public class AvailableExpressions
 			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
 		
 		Set<AvailableExpressions> result = new HashSet<>();
-		if(!expression.getStaticType().isNumericType() && !expression.getStaticType().isBooleanType() && !expression.getStaticType().isStringType() && !expression.getStaticType().isVoidType()) {
+		if(canBeAdded(expression)) {
 			AvailableExpressions ae = new AvailableExpressions(expression, id, pp.getLocation());
 			result.add(ae);
 		}
 		return result;
-	}
-
-	@Override
-	public Collection<AvailableExpressions> gen(ValueExpression expression, ProgramPoint pp,
-			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
-		return new HashSet<>();
 	}
 	
 	private boolean isPresent(Identifier id, String exp) {
@@ -66,16 +87,21 @@ public class AvailableExpressions
 	}
 
 	@Override
+	public Collection<AvailableExpressions> gen(ValueExpression expression, ProgramPoint pp,
+			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
+		return new HashSet<>();
+	}
+
+	@Override
 	public Collection<AvailableExpressions> kill(Identifier id, ValueExpression expression, ProgramPoint pp,
 			DefiniteForwardDataflowDomain<AvailableExpressions> domain) throws SemanticException {
 		
 		Set<AvailableExpressions> result = new HashSet<>();
-
-		for (AvailableExpressions ae : domain.getDataflowElements()) {
-			String exp = ae.expression.toString();;
-			if (isPresent(id, exp)) {
+		
+		for(AvailableExpressions ae : domain.getDataflowElements()) {
+			String exp = ae.expression.toString();
+			if(isPresent(id, exp))
 				result.add(ae);
-			}
 		}
 		return result;
 	}
@@ -88,7 +114,7 @@ public class AvailableExpressions
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(expression, ident, point);
+		return Objects.hash(expression, id, point);
 	}
 
 	@Override
@@ -100,7 +126,7 @@ public class AvailableExpressions
 		if (getClass() != obj.getClass())
 			return false;
 		AvailableExpressions other = (AvailableExpressions) obj;
-		return Objects.equals(expression, other.expression) && Objects.equals(ident, other.ident)
+		return Objects.equals(expression, other.expression) && Objects.equals(id, other.id)
 				&& Objects.equals(point, other.point);
 	}
 	
@@ -111,12 +137,12 @@ public class AvailableExpressions
 
 	@Override
 	public AvailableExpressions pushScope(ScopeToken scope) throws SemanticException {
-		return new AvailableExpressions((ValueExpression) expression.pushScope(scope), ident, point);
+		return new AvailableExpressions((ValueExpression) expression.pushScope(scope), id, point);
 	}
 
 	@Override
 	public AvailableExpressions popScope(ScopeToken scope) throws SemanticException {
-		return new AvailableExpressions((ValueExpression) expression.popScope(scope), ident, point);
+		return new AvailableExpressions((ValueExpression) expression.popScope(scope), id, point);
 	}
 }
 
