@@ -205,10 +205,7 @@ public class AvailableExpressions
 			AvailableExpressions ae = new AvailableExpressions(expression, pp);
 			result.add(ae);
 		}
-		// if (ae.getInvolvedIdentifiers().size() > 0) {
-		// result.add(ae);
-		// }
-
+		
 		return result;
 	}
 
