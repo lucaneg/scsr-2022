@@ -11,19 +11,23 @@ public class AvailableExpressions {
 	// of "expression". If you don't have a field of type ValueExpression in your solution,
 	// then you should make sure that what you are doing is correct :)
 	
-//	@Override
-//	public DomainRepresentation representation() {
-//		return new StringRepresentation(expression);
-//	}
-//
-//	@Override
-//	public AvailableExpressions pushScope(ScopeToken scope) throws SemanticException {
-//		return new AvailableExpressions((ValueExpression) expression.pushScope(scope));
-//	}
-//
-//	@Override
-//	public AvailableExpressions popScope(ScopeToken scope) throws SemanticException {
-//		return new AvailableExpressions((ValueExpression) expression.popScope(scope));
-//	}
+	
+	
+	private ValueExpression action;
+	
+	@Override
+	public DomainRepresentation representation() {
+		return new StringRepresentation(action);
+	}
+
+	@Override
+	public AvailableExpressions pushScope(ScopeToken scope) throws SemanticException {
+		return new AvailableExpressions((ValueExpression) action.pushScope(scope));
+	}
+
+	@Override
+	public AvailableExpressions popScope(ScopeToken scope) throws SemanticException {
+		return new AvailableExpressions((ValueExpression) action.popScope(scope));
+	}
 }
 
