@@ -19,6 +19,10 @@ public class ReachingDefinitionsTest {
 	@Test
 	public void testReachingDefinitions() throws ParsingException, AnalysisException {
 		Program program = IMPFrontend.processFile("inputs/reaching-definitions.imp");
+		Program program3 = IMPFrontend.processFile("inputs/reaching-definitions3.imp");
+		Program program4 = IMPFrontend.processFile("inputs/reaching-definitions4.imp");
+		Program program5 = IMPFrontend.processFile("inputs/reaching-definitions5.imp");
+		Program program6 = IMPFrontend.processFile("inputs/reaching-definitions6.imp");
 		
 		LiSAConfiguration conf = new LiSAConfiguration();
 		conf.setJsonOutput(true);
@@ -33,5 +37,10 @@ public class ReachingDefinitionsTest {
 		
 		LiSA lisa = new LiSA(conf);
 		lisa.run(program);
+		lisa.run(program2);
+		lisa.run(program3);
+		lisa.run(program4);
+		lisa.run(program5);
+		lisa.run(program6);
 	}
 }
