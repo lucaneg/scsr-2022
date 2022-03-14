@@ -1,29 +1,201 @@
 package it.unive.scsr;
 
-public class AvailableExpressions {
+import it.unive.lisa.analysis.ScopeToken;
+import it.unive.lisa.analysis.SemanticException;
+import it.unive.lisa.analysis.dataflow.DataflowElement;
+import it.unive.lisa.analysis.dataflow.DefiniteForwardDataflowDomain;
+import it.unive.lisa.analysis.representation.DomainRepresentation;
+import it.unive.lisa.analysis.representation.StringRepresentation;
+import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 
+public class AvailableExpressions implements DataflowElement<DefiniteForwardDataflowDomain<AvailableExpressions>, AvailableExpressions> {
 
-	// IMPLEMENTATION NOTE:
-	// the code below is outside of the scope of the course. You can uncomment it to get
-	// your code to compile. Beware that the code is written expecting that a field named 
-	// "expression" of type ValueExpression exists in this class: if you name it differently,
-	// change also the code below to make it work by just using the name of your choice instead
-	// of "expression". If you don't have a field of type ValueExpression in your solution,
-	// then you should make sure that what you are doing is correct :)
-	
-//	@Override
-//	public DomainRepresentation representation() {
-//		return new StringRepresentation(expression);
-//	}
-//
-//	@Override
-//	public AvailableExpressions pushScope(ScopeToken scope) throws SemanticException {
-//		return new AvailableExpressions((ValueExpression) expression.pushScope(scope));
-//	}
-//
-//	@Override
-//	public AvailableExpressions popScope(ScopeToken scope) throws SemanticException {
-//		return new AvailableExpressions((ValueExpression) expression.popScope(scope));
-//	}
+    // Specify the information that is tracked by the domain, in this case it is just the ValueExpression expression
+    private final ValueExpression expression;
+
+    /**
+     * AvailableExpressions null constructor
+     */
+    public AvailableExpressions() {
+        this(null);
+    }
+
+    /**
+     * AvailableExpressions constructor with ValueExpression expression
+     */
+    private AvailableExpressions(ValueExpression expression) {
+        this.expression = expression;
+    }
+
+    /**
+     * Override hashCode() function for AvailableExpressions
+     */
+    @Override
+    public int hashCode() {
+        int hash = 5; // use a prime number as hash, results in distinct hashcode for a distinct expression
+        int multiplier = 7; // use a different prime number as a multiplier
+        hash = hash * multiplier + (expression != null ? expression.hashCode() : 0); // compute hash for expression
+        return hash;
+    }
+
+    /**
+     * Override equals() function for AvailableExpressions
+     */
+	@Override
+	public boolean equals(Object obj) {
+        AvailableExpressions other = (AvailableExpressions) obj;
+
+		if (obj == null) {
+            return false;
+        } else if (getClass() != obj.getClass()) {
+            return false;
+        } else if (expression == null) {
+            if (other.expression != null) {
+                return false;
+            }
+        } else if (!expression.equals(other.expression)) {
+            return false;
+        }
+		return true;
+	}
+
+    /**
+     * Override toString() function for AvailableExpressions
+     */
+    @Override
+    public String toString() {
+        return representation().toString();
+    }
+
+    /**
+     * Override getInvolvedIdentifiers() function for AvailableExpressions
+     */
+    @Override
+    public Collection<Identifier> getInvolvedIdentifiers() {
+        return getOperandsForIdentifiers(expression);
+    }
+
+    /**
+     * Returns the identifiers and their operands that are involved in the expression
+     */
+    private static Collection<Identifier> getOperandsForIdentifiers(ValueExpression expression) {
+        Collection<Identifier> involvedIdentifiers = new HashSet<>();
+        if (expression == null) {
+            return involvedIdentifiers;
+        } else if (expression instanceof Identifier) {
+            involvedIdentifiers.add((Identifier) expression);
+        } else if (expression instanceof UnaryExpression) {
+            UnaryExpression unary = (UnaryExpression) expression;
+            involvedIdentifiers.addAll(getOperandsForIdentifiers((ValueExpression) unary.getExpression()));
+        } else if (expression instanceof BinaryExpression) {
+            BinaryExpression binary = (BinaryExpression) expression;
+            involvedIdentifiers.addAll(getOperandsForIdentifiers((ValueExpression) binary.getLeft()));
+            involvedIdentifiers.addAll(getOperandsForIdentifiers((ValueExpression) binary.getRight()));
+        } else if (expression instanceof TernaryExpression) {
+            TernaryExpression ternary = (TernaryExpression) expression;
+            involvedIdentifiers.addAll(getOperandsForIdentifiers((ValueExpression) ternary.getLeft()));
+            involvedIdentifiers.addAll(getOperandsForIdentifiers((ValueExpression) ternary.getMiddle()));
+            involvedIdentifiers.addAll(getOperandsForIdentifiers((ValueExpression) ternary.getRight()));
+        }
+        return involvedIdentifiers;
+    }
+
+    /**
+     * Override gen() function for an identifier, an expression, a program point, and a domain
+     * Evaluated when we are given an expression and an identifier being assigned
+     * We consider the dataflow elements generated by assignment of given expression to the given id
+     *
+     * @id the identifier being assigned
+     * @expression the expression to evaluare
+     * @pp the program point where this gen function is being evaluated (corresponds to the assignment)
+     * @domain the pointer to domain that contains the results
+     */
+    @Override
+    public Collection<AvailableExpressions> gen(Identifier id, ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailableExpressions> domain) {
+        Collection<AvailableExpressions> genSet = new HashSet<>(); // Set of expressions that are generated
+        AvailableExpressions availableExpression = new AvailableExpressions(expression);
+
+        if (!availableExpression.getInvolvedIdentifiers().contains(id) &&
+                !(expression instanceof Identifier) &&
+                !(expression instanceof Constant) &&
+                !(expression instanceof Skip) &&
+                !(expression instanceof PushAny)) {
+
+            genSet.add(availableExpression);
+        }
+        return genSet;
+    }
+
+    /**
+     * Override gen() function for an expression, a program point, and a domain
+     * Evaluated when we are not dealing with an assignment of an identifier
+     */
+    @Override
+    public Collection<AvailableExpressions> gen(ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailableExpressions> domain) {
+        Collection<AvailableExpressions> genSet = new HashSet<>(); // elements that are generated
+        AvailableExpressions availableExpression = new AvailableExpressions(expression);
+        if (!(expression instanceof Identifier) &&
+                !(expression instanceof Constant) &&
+                !(expression instanceof Skip) &&
+                !(expression instanceof PushAny)) {
+            genSet.add(availableExpression);
+        }
+        return genSet;
+    }
+
+    /**
+     * Override kill() function for an identifier id, an expression, a program point, and a domain
+     * Evaluated when the expression is no longer valid at the program point, and so we must kill some elements from the domain
+     */
+    @Override
+    public Collection<AvailableExpressions> kill(Identifier id, ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailableExpressions> domain) {
+        Collection<AvailableExpressions> killSet = new HashSet<>(); // Collections of available expressions to kill
+
+        // Iterate through the dataflow elements of the domain for each expression
+        for (AvailableExpressions availableExpression : domain.getDataflowElements()) {
+            Collection<Identifier> expressionIDList = getOperandsForIdentifiers(availableExpression.expression); // get list of all identifiers in the expression
+            if (expressionIDList.contains(id)) { // if the expression contains the identifier passed into the function
+                killSet.add(availableExpression); // add to the kill set
+            }
+        }
+
+        return killSet;
+    }
+
+    /**
+     * Override kill() function for an expression, a program point, and a domain
+     * Override kill() function for an expression which is evaluated at points in the program where an expression is valid
+     * Evaluated when the expression is still valid, and so we don't want to kill any existing domain elements
+     */
+    @Override
+    public Collection<AvailableExpressions> kill(ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailableExpressions> domain) {
+        return Collections.emptyList();
+    }
+
+    // IMPLEMENTATION NOTE:
+    // the code below is outside of the scope of the course. You can uncomment it to get
+    // your code to compile. Beware that the code is written expecting that a field named
+    // "expression" of type ValueExpression exists in this class: if you name it differently,
+    // change also the code below to make it work by just using the name of your choice instead
+    // of "expression". If you don't have a field of type ValueExpression in your solution,
+    // then you should make sure that what you are doing is correct :)
+
+    @Override
+    public DomainRepresentation representation() {
+        return new StringRepresentation(expression);
+    }
+
+    @Override
+    public AvailableExpressions pushScope(ScopeToken scope) throws SemanticException {
+        return new AvailableExpressions((ValueExpression) expression.pushScope(scope));
+    }
+
+    @Override
+    public AvailableExpressions popScope(ScopeToken scope) throws SemanticException {
+        return new AvailableExpressions((ValueExpression) expression.popScope(scope));
+    }
 }
-
