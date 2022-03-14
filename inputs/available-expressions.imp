@@ -42,7 +42,7 @@ class AvailableExpressions {
         def c = 20;
         def z = b * c;
         c = 1;
-        z = c * b;
+        z = c * (b * a);
         a = b * a;
     }
 

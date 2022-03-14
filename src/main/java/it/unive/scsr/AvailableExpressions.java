@@ -71,7 +71,7 @@ public class AvailableExpressions
 
         if (symbolicExpression != null){
             // Base case of our expression
-            if (symbolicExpression instanceof Identifier) {
+            if (symbolicExpression instanceof Variable) {
                 this.involvedIds.add((Identifier) symbolicExpression);
                 involvedIdentifiers.add((Identifier) symbolicExpression);
             }
