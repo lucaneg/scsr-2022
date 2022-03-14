@@ -1,0 +1,26 @@
+class availableExpressions {
+	test1() {
+	    def a = 5 * 2; //Testing constant assignment expression
+	    def b = a; //Testing identifier assignment expression
+		def x = a + b;
+		def y = a * b;
+		for(;y > a + b;x = a + b)
+		    a = a + 1;
+	}
+
+    test2() {
+        def x = 0;
+        def i = 0;
+        2 + i; //testing non assigning expression
+        if (i > 5)
+            x = 10;
+        else
+            x = "s";
+    }
+
+    test3() {
+        def a = 5;
+	    a; //Testing identifier expression
+    }
+
+}
