@@ -1,0 +1,12 @@
+class reachingDefinitionsfour{
+
+testfour()
+{
+def p = 5;
+def q = 1;
+while (p != 1) {
+  q = p* q;
+  p = -1;
+}
+}
+}
