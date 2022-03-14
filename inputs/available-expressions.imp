@@ -1,0 +1,40 @@
+class reachingDefinitions {
+	test1() {
+		def x = 5 + 6;
+		def z = x;
+		def y = 3 * x;
+		y = x + 1;
+	}
+
+	test2() {
+		def x = 3;
+		def z = 4;
+		def w = z + x + 8;
+		def i = w * 2;
+		if (i >= 10)
+			x = x + w;
+		else
+			x = x - w;
+		z = z - 5;
+	}
+
+	test3() {
+        def b = 0;
+              def c = 0;
+              def f = 0;
+              def e = 0;
+              def a = b + c;
+              def d = e + f;
+              f = a + c;
+              if (true) {
+                 def g = a + c;
+              } else {
+                 while (true) {
+                    b = a + d;
+                    def h = c + f;
+                 }
+              }
+              def j = a + b + c + d;
+              return j;
+      }
+}
