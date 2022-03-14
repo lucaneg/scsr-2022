@@ -71,7 +71,7 @@ public class AvailableExpressions
 
         if (symbolicExpression != null){
             // Base case of our expression
-            if (symbolicExpression instanceof Variable) {
+            if (symbolicExpression instanceof Identifier) {
                 this.involvedIds.add((Identifier) symbolicExpression);
                 involvedIdentifiers.add((Identifier) symbolicExpression);
             }
@@ -117,11 +117,9 @@ public class AvailableExpressions
 
         // If id of variable is already contained we make the intersection
         if (!ae.involvedIds.contains(id)) {
-            if (expression instanceof Identifier ||
-                    expression instanceof UnaryExpression ||
+            if (expression instanceof UnaryExpression ||
                     expression instanceof BinaryExpression ||
                     expression instanceof TernaryExpression) {
-                this.expression = expression;
 
                 // We can add the value expression in the program available expression set list
                 availableExpressionsSet.add(ae);
