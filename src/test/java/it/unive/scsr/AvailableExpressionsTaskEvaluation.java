@@ -26,11 +26,11 @@ import it.unive.lisa.outputs.JsonReport;
 import it.unive.lisa.outputs.compare.JsonReportComparer;
 import it.unive.lisa.program.Program;
 
-public class AvailableExpressionsTest {
+public class AvailableExpressionsTaskEvaluation {
 
 	@Test
 	public void testAvailableExpressions() throws ParsingException, AnalysisException {
-		Program program = IMPFrontend.processFile("inputs/available-expressions.imp");
+		Program program = IMPFrontend.processFile("inputs/ae-eval.imp");
 
 		LiSAConfiguration conf = new LiSAConfiguration();
 		conf.setJsonOutput(true);
