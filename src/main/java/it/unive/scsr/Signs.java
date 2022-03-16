@@ -25,7 +25,7 @@ public class Signs extends BaseNonRelationalValueDomain<Signs> {
 		BOTTOM, MINUS, ZERO, PLUS, TOP;
 	}
 
-	final Sign sign;
+	private final Sign sign;
 
 	public Signs() {
 		this(Sign.TOP);
