@@ -80,7 +80,6 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 
 	@Override
 	protected ExtSignDomain wideningAux(ExtSignDomain other) throws SemanticException {
-		// TODO: Oppure come lubAux?
 		return TOP;
 	}
 
