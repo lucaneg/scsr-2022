@@ -190,6 +190,9 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 			ProgramPoint pp)
 			throws SemanticException {
 		if (operator instanceof AdditionOperator) {
+
+			// ADDITION
+
 			switch (left.sign) {
 				case MINUS:
 					switch (right.sign) {
@@ -215,7 +218,11 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 					return TOP;
 			}
 		} else if (operator instanceof SubtractionOperator) {
+
+			// SUBTRACTION
+
 			switch (left.sign) {
+				case ZERO_MINUS:
 				case MINUS:
 					switch (right.sign) {
 						case PLUS:
@@ -227,21 +234,26 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 						default:
 							return TOP;
 					}
+				case ZERO_PLUS:
 				case PLUS:
 					switch (right.sign) {
-						case ZERO_PLUS:
-						case PLUS:
+						case ZERO_MINUS:
+						case MINUS:
 						case ZERO:
 							return new ExtSignDomain(Sign.PLUS);
 						default:
 							return TOP;
 					}
 				case ZERO:
-					return right;
+					return right.negate();
+				case TOP:
 				default:
 					return TOP;
 			}
 		} else if (operator instanceof Multiplication) {
+
+			// MULTIPLICATION
+
 			switch (left.sign) {
 				case MINUS:
 					switch (right.sign) {
@@ -255,7 +267,6 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 							return new ExtSignDomain(Sign.ZERO_PLUS);
 						case ZERO_PLUS:
 							return new ExtSignDomain(Sign.ZERO_MINUS);
-						case TOP:
 						default:
 							return TOP;
 
@@ -263,51 +274,46 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 				case PLUS:
 					switch (right.sign) {
 						case MINUS:
-							return new ExtSignDomain(Sign.PLUS);
-						case PLUS:
 							return new ExtSignDomain(Sign.MINUS);
+						case PLUS:
+							return new ExtSignDomain(Sign.PLUS);
 						case ZERO:
 							return new ExtSignDomain(Sign.ZERO);
 						case ZERO_MINUS:
-							return new ExtSignDomain(Sign.ZERO_PLUS);
-						case ZERO_PLUS:
 							return new ExtSignDomain(Sign.ZERO_MINUS);
-						case TOP:
+						case ZERO_PLUS:
+							return new ExtSignDomain(Sign.ZERO_PLUS);
 						default:
 							return TOP;
 
 					}
 				case ZERO:
-					switch (right.sign) {
-						case MINUS:
-							return new ExtSignDomain(Sign.PLUS);
-						case PLUS:
-							return new ExtSignDomain(Sign.MINUS);
-						case ZERO:
-							return new ExtSignDomain(Sign.ZERO);
-						case ZERO_MINUS:
-							return new ExtSignDomain(Sign.ZERO_PLUS);
-						case ZERO_PLUS:
-							return new ExtSignDomain(Sign.ZERO_MINUS);
-						case TOP:
-						default:
-							return TOP;
-
+					return new ExtSignDomain(Sign.ZERO);
+				case ZERO_PLUS:
+				case ZERO_MINUS:
+				case TOP:
+					if (right.sign == Sign.ZERO) {
+						return new ExtSignDomain(Sign.ZERO);
+					} else {
+						return TOP;
 					}
 				default:
 					return TOP;
 			}
 		} else if (operator instanceof DivisionOperator) {
-			if (right.sign == Sign.ZERO)
+
+			// DIVISION
+
+			// Divide by zero
+			if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS || right.sign == Sign.ZERO_PLUS) {
 				return BOTTOM;
+			}
 
 			switch (left.sign) {
 				case MINUS:
 					return right.negate();
 				case PLUS:
 					return right;
-				case TOP:
-					return TOP;
 				case ZERO:
 					return new ExtSignDomain(Sign.ZERO);
 				default:
