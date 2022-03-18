@@ -18,7 +18,6 @@ import it.unive.lisa.symbolic.value.BinaryExpression;
 import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.TernaryExpression;
-import it.unive.lisa.symbolic.value.UnaryExpression;
 import it.unive.lisa.symbolic.value.ValueExpression;
 import it.unive.lisa.symbolic.value.Variable;
 
@@ -81,10 +80,31 @@ public class AvailableExpressions
 		return result;
 	}
 	
+	
 	private boolean isPresent(Identifier id, String exp) {
 		String i = "" + id;
 		return exp.contains(i);
 	}
+	
+	/*
+	private Collection<Identifier> getOperandIds(SymbolicExpression exp){
+        Collection<Identifier> ids = new HashSet<>();
+        if(exp.getClass().isInstance(UnaryExpression.class)){
+            if(!exp.getDynamicType().isNumericType())
+                ids.add((Identifier) exp);
+        }
+        if(exp.getClass().isInstance(BinaryExpression.class)){
+            ids.addAll(getOperandIds(((BinaryExpression) exp).getLeft()));
+            ids.addAll(getOperandIds(((BinaryExpression) exp).getRight()));
+        }
+        if(exp.getClass().isInstance(TernaryExpression.class)){
+            ids.addAll(getOperandIds(((TernaryExpression) exp).getLeft()));
+            ids.addAll(getOperandIds(((TernaryExpression) exp).getMiddle()));
+            ids.addAll(getOperandIds(((TernaryExpression) exp).getRight()));
+        }
+        return ids;
+    }
+    */
 
 	@Override
 	public Collection<AvailableExpressions> gen(ValueExpression expression, ProgramPoint pp,
@@ -100,7 +120,7 @@ public class AvailableExpressions
 		
 		for(AvailableExpressions ae : domain.getDataflowElements()) {
 			String exp = ae.expression.toString();
-			if(isPresent(id, exp))
+			if(isPresent(id, exp));
 				result.add(ae);
 		}
 		return result;
