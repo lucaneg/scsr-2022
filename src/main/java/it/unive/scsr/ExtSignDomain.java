@@ -27,7 +27,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     private static final ExtSignDomain BOTTOM = new ExtSignDomain(ExtSignDomain.Sign.BOTTOM);
 
     enum Sign {
-        BOTTOM, MINUS, ZERO, PLUS, OMINUS, OPLUS, TOP;
+        BOTTOM, MINUS, ZERO, PLUS, OMINUS, OPLUS, TOP
     }
 
     private final ExtSignDomain.Sign sign;
@@ -287,7 +287,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                     return TOP;
             }
         } else if (operator instanceof DivisionOperator) {
-            if (right.sign == ExtSignDomain.Sign.ZERO)
+            if (right.sign == ExtSignDomain.Sign.ZERO || right.sign == ExtSignDomain.Sign.OPLUS || right.sign == Sign.OMINUS)
                 return BOTTOM;
 
             switch (left.sign) {
@@ -295,6 +295,27 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                     return right.negate();
                 case PLUS:
                     return right;
+                case OMINUS:
+                    switch (right.sign){
+                        case PLUS:
+                            return left;
+                        case MINUS:
+                            return new ExtSignDomain(ExtSignDomain.Sign.OPLUS);
+                        case TOP:
+                        default:
+                            return TOP;
+                    }
+                case OPLUS:
+                    switch (right.sign){
+                        case PLUS:
+                            return left;
+                        case MINUS:
+                            return new ExtSignDomain(ExtSignDomain.Sign.OMINUS);
+                        case TOP:
+                        default:
+                            return TOP;
+
+                    }
                 case ZERO:
                     return new ExtSignDomain(ExtSignDomain.Sign.ZERO);
                 case TOP:
