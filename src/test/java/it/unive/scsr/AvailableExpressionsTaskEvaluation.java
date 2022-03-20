@@ -39,7 +39,7 @@ public class AvailableExpressionsTaskEvaluation {
 		conf.setAbstractState(
 				new SimpleAbstractState<>(
 						new MonolithicHeap(),
-						new DefiniteForwardDataflowDomain<>(new AvailableExpressions()),
+						new DefiniteForwardDataflowDomain<>(new AvailableExpressionsSolution()),
 						new TypeEnvironment<>(new InferredTypes())));
 
 		LiSA lisa = new LiSA(conf);
