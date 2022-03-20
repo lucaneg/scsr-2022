@@ -18,11 +18,13 @@ class tutorial {
 	}
 	
 	branches(a, b) {
-		def x = 0;
-		if (a > b) 
-           	x = x * 7;
+	    def z = 0;
+		def x = 20;
+		def y = 0;
+		if (y > x)
+           	z = y * 7;
        	else
-           	x = -7;
-		def y = x / x;
+           	z = x * 10;
+		y = -z;
     }
 }
