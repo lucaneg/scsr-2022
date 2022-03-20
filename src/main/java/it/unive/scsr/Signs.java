@@ -77,11 +77,11 @@ public class Signs extends BaseNonRelationalValueDomain<Signs> {
 		return false;
 	}
 
-	@Override
+	@Override                                                                                                                                                                       
 	public DomainRepresentation representation() {
 		return new StringRepresentation(sign);
 	}
-
+      
 	@Override
 	protected Signs evalNonNullConstant(Constant constant, ProgramPoint pp) throws SemanticException {
 		if (constant.getValue() instanceof Integer) {
