@@ -5,6 +5,7 @@ import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.operator.AdditionOperator;
 import it.unive.lisa.symbolic.value.operator.DivisionOperator;
 import it.unive.lisa.symbolic.value.operator.Multiplication;
@@ -142,6 +143,20 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
             return new ExtSignDomain(ZEROPLUS);
         else
             return this;
+    }
+
+    @Override
+    protected ExtSignDomain evalNonNullConstant(Constant constant, ProgramPoint pp) throws SemanticException {
+        if (constant.getValue() instanceof Integer) {
+            int v = (Integer) constant.getValue();
+            if (v > 0)
+                return new ExtSignDomain(PLUS);
+            else if (v == 0)
+                return new ExtSignDomain(ZERO);
+            else
+                return new ExtSignDomain(MINUS);
+        }
+        return top();
     }
 
     @Override
