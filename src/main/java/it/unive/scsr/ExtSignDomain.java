@@ -196,7 +196,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 				case ZERO:
 				case MINUS:
 				case ZERO_MINUS:
-					return left;
+					return new ExtSignDomain(Sign.MINUS);
 				case PLUS:
 				case TOP:
 				case ZERO_PLUS:
@@ -208,7 +208,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 				case PLUS:
 				case ZERO:
 				case ZERO_PLUS:
-					return left;
+					return new ExtSignDomain(Sign.PLUS);
 				case MINUS:
 				case TOP:
 				case ZERO_MINUS:
@@ -251,7 +251,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 			case TOP:
 				return TOP;
 			case ZERO:
-				return right;
+				return right.negate();
 			default:
 				return TOP;
 			}
@@ -260,7 +260,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 			case MINUS:
 				return right.negate();
 			case PLUS:
-				return right;
+				return new ExtSignDomain(Sign.PLUS);
 			case TOP:
 				return TOP;
 			case ZERO:
@@ -276,7 +276,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 			case MINUS:
 				return right.negate();
 			case PLUS:
-				return right;
+				return new ExtSignDomain(Sign.PLUS);
 			case TOP:
 				return TOP;
 			case ZERO:
