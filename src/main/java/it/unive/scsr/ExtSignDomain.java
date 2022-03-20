@@ -179,7 +179,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 				default:
 					return TOP;
 				}
-			case ZERO:;
+			case ZERO:
 				return right;
 			case ZEROPLUS:
 				switch(right.extSign) {
@@ -338,7 +338,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 				case ZEROPLUS:
 					return ZEROPLUS;
 				case ZEROMINUS:
-					return ZEROPLUS;
+					return ZEROMINUS;
 				case TOP:
 					return TOP;
 				default:
@@ -362,7 +362,12 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 					return TOP;
 				}
 			case TOP:
-				return TOP;
+				switch(right.extSign) {
+				case ZERO:
+					return ZERO;
+				default: 
+					return TOP;
+				}
 			default:
 				return TOP;
 			}
@@ -378,9 +383,9 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 				case PLUS:
 					return MINUS;
 				case ZEROPLUS:
-					return BOTTOM; //check this
+					return BOTTOM;
 				case ZEROMINUS:
-					return BOTTOM; //check this
+					return BOTTOM;
 				case TOP:
 					return TOP;
 				default:
@@ -389,35 +394,82 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 			case PLUS:
 				switch(right.extSign) {
 				case ZERO:
-					return ZERO;
+					return BOTTOM;
 				case MINUS:
 					return MINUS;
 				case PLUS:
 					return PLUS;
 				case ZEROPLUS:
-					return BOTTOM; //check this
+					return BOTTOM;
 				case ZEROMINUS:
-					return BOTTOM; //check this
+					return BOTTOM;
 				case TOP:
 					return TOP;
 				default: 
 					return TOP;		
 				}
 			case ZERO:
-				return BOTTOM;
+				switch(right.extSign) {
+				case ZERO:
+					return BOTTOM;
+				case MINUS:
+					return ZERO;
+				case PLUS:
+					return ZERO;
+				case ZEROPLUS:
+					return BOTTOM;
+				case ZEROMINUS:
+					return BOTTOM;
+				case TOP:
+					return TOP;
+				default:
+					return TOP;
+				}
 			case ZEROPLUS:
-				return BOTTOM; //check this
+				switch(right.extSign) {
+				case ZERO:
+					return BOTTOM;
+				case MINUS:
+					return ZEROMINUS;
+				case PLUS:
+					return ZEROPLUS;
+				case ZEROPLUS:
+					return BOTTOM;
+				case ZEROMINUS:
+					return BOTTOM;
+				case TOP:
+					return TOP;
+				default: 
+					return TOP;
+				}
 			case ZEROMINUS:
-				return BOTTOM; //check this
+				switch(right.extSign) {
+				case ZERO:
+					return BOTTOM;
+				case MINUS:
+					return ZEROPLUS;
+				case PLUS:
+					return left;
+				case ZEROPLUS:
+					return BOTTOM;
+				case ZEROMINUS:
+					return BOTTOM;
+				case TOP:
+					return TOP;
+				default:
+					return TOP;
+				}
 			case TOP:
 				switch(right.extSign) {
 				case ZERO:
 					return left;
 				case MINUS:
 				case PLUS:
+					return TOP;
 				case ZEROPLUS:
 				case ZEROMINUS:
 				case TOP:
+					return BOTTOM;
 				default:
 					return TOP;
 				}
