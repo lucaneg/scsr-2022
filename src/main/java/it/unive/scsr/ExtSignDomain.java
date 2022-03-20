@@ -46,7 +46,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 	                    return new ExtSignDomain(ExtSign.MINUS_ZERO);    
 	                case PLUS_ZERO:
 	                    return new ExtSignDomain(ExtSign.PLUS_ZERO);   
-	                default: return new ExtSignDomain(ExtSign.TOP);
+	                default: return top();
 	            }
 	        case MINUS:
 	            switch (other.sign){
@@ -54,7 +54,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 	                	return new ExtSignDomain(ExtSign.MINUS_ZERO);
 	                case MINUS_ZERO:
 	                    return new ExtSignDomain(ExtSign.MINUS_ZERO);
-	                default: return new ExtSignDomain(ExtSign.TOP);
+	                default: return top();
 	            }
 	        case PLUS:
 	            switch (other.sign){
@@ -62,7 +62,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 	                	return new ExtSignDomain(ExtSign.PLUS_ZERO);
 	                case PLUS_ZERO:
 	                    return new ExtSignDomain(ExtSign.PLUS_ZERO);
-	                default: return new ExtSignDomain(ExtSign.TOP);
+	                default: return top();
 	            }
 	        case MINUS_ZERO:
 	            switch (other.sign){
@@ -70,7 +70,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 	                	return new ExtSignDomain(ExtSign.MINUS_ZERO);
 	                case MINUS:
 	                	return new ExtSignDomain(ExtSign.MINUS_ZERO);	
-	                default: return new ExtSignDomain(ExtSign.TOP);
+	                default: return top();
 	            }
 	        case PLUS_ZERO:
 	            switch (other.sign){
@@ -78,9 +78,9 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 	                	return new ExtSignDomain(ExtSign.PLUS_ZERO);
 	                case PLUS:
 	                	return new ExtSignDomain(ExtSign.PLUS_ZERO);	
-	                default: return new ExtSignDomain(ExtSign.TOP);
+	                default: return top();
 	            }
-	        default: return new ExtSignDomain(ExtSign.TOP);  
+	        default: return top();  
 	    }
 	}
 
@@ -166,7 +166,6 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     protected ExtSignDomain evalUnaryExpression(UnaryOperator operator, ExtSignDomain arg, ProgramPoint pp) throws SemanticException {
         if (operator instanceof NumericNegation)
             return arg.negate();
-
         return top();
     }
 
@@ -182,30 +181,30 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 						case PLUS:return new ExtSignDomain(ExtSign.PLUS); 
 						case PLUS_ZERO:return new ExtSignDomain(ExtSign.PLUS); 
 						case ZERO:return new ExtSignDomain(ExtSign.PLUS); 
-						default: return new ExtSignDomain(ExtSign.TOP); 
+						default: return top(); 
 					}
 				case PLUS_ZERO:
 					switch(right.sign) {
 						case PLUS:return new ExtSignDomain(ExtSign.PLUS); 
 						case PLUS_ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
 						case ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
-						default: return new ExtSignDomain(ExtSign.TOP);
+						default: return top();
 					}
 				case MINUS:
 					switch(right.sign) {
 						case MINUS: return new ExtSignDomain(ExtSign.MINUS); 
 						case MINUS_ZERO:return new ExtSignDomain(ExtSign.MINUS); 
 						case ZERO:return new ExtSignDomain(ExtSign.MINUS); 
-						default: return new ExtSignDomain(ExtSign.TOP); 
+						default: return top(); 
 					}
 				case MINUS_ZERO:
 					switch(right.sign) {
 						case MINUS:return new ExtSignDomain(ExtSign.MINUS); 
 						case MINUS_ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO);
 						case ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO); 
-						default: return new ExtSignDomain(ExtSign.TOP); 
+						default: return top(); 
 					}
-				default: return new ExtSignDomain(ExtSign.TOP); 
+				default: return top(); 
 			}
 		}
 		if(operator instanceof SubtractionOperator) {
@@ -217,37 +216,37 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 					case MINUS:return new ExtSignDomain(ExtSign.PLUS); 
 					case MINUS_ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
 					case ZERO:return new ExtSignDomain(ExtSign.ZERO); 
-					default: return new ExtSignDomain(ExtSign.TOP); 
+					default: return top(); 
 				}
 			case PLUS:
 				switch(right.sign) { 
 					case ZERO:return new ExtSignDomain(ExtSign.PLUS); 
 					case MINUS:return new ExtSignDomain(ExtSign.PLUS); 
 					case MINUS_ZERO:return new ExtSignDomain(ExtSign.PLUS); 
-					default: return new ExtSignDomain(ExtSign.TOP); 
+					default: return top(); 
 				}
 			case PLUS_ZERO:
 				switch(right.sign) {
 					case MINUS:return new ExtSignDomain(ExtSign.PLUS); 
 					case MINUS_ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
 					case ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
-					default: return new ExtSignDomain(ExtSign.TOP); 
+					default: return top(); 
 				}
 			case MINUS:
 				switch(right.sign) {
 					case ZERO:return new ExtSignDomain(ExtSign.MINUS); 
 					case PLUS:return new ExtSignDomain(ExtSign.MINUS); 
 					case PLUS_ZERO:return new ExtSignDomain(ExtSign.MINUS); 
-					default: return new ExtSignDomain(ExtSign.TOP); 
+					default: return top(); 
 				}
 			case MINUS_ZERO:
 				switch(right.sign) {
 					case PLUS:return new ExtSignDomain(ExtSign.MINUS);
 					case PLUS_ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO);
 					case ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO);
-					default: return new ExtSignDomain(ExtSign.TOP);
+					default: return top();
 				}
-			default: return new ExtSignDomain(ExtSign.TOP); 
+			default: return top(); 
 			}
 		}
 		if(operator instanceof Multiplication) {
@@ -261,7 +260,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 					case PLUS:return new ExtSignDomain(ExtSign.PLUS);
 					case PLUS_ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO);
 					case ZERO:return new ExtSignDomain(ExtSign.ZERO); 
-					default: return new ExtSignDomain(ExtSign.TOP);
+					default: return top();
 				}
 			case PLUS_ZERO:
 				switch(right.sign) {
@@ -270,7 +269,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 					case MINUS:return new ExtSignDomain(ExtSign.MINUS_ZERO); 
 					case MINUS_ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO); 
 					case ZERO:return new ExtSignDomain(ExtSign.ZERO); 
-					default: return new ExtSignDomain(ExtSign.TOP);
+					default: return top();
 				}
 			case MINUS:
 				switch(right.sign) {
@@ -279,7 +278,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 					case ZERO:return new ExtSignDomain(ExtSign.ZERO); 
 					case PLUS:return new ExtSignDomain(ExtSign.MINUS); 
 					case PLUS_ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO); 
-					default: return new ExtSignDomain(ExtSign.TOP); 
+					default: return top();
 				}
 			case MINUS_ZERO:
 				switch(right.sign) {
@@ -288,9 +287,9 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 					case MINUS:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
 					case MINUS_ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
 					case ZERO:return new ExtSignDomain(ExtSign.ZERO); 
-					default: return new ExtSignDomain(ExtSign.TOP);
+					default: return top();
 				}
-			default: return new ExtSignDomain(ExtSign.TOP); 
+			default: return top();
 		}
 		}
 
@@ -298,17 +297,17 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 			switch (left.sign) {
 			case ZERO:
 				switch(right.sign) {
-					case ZERO:return new ExtSignDomain(ExtSign.BOTTOM); 
+					case ZERO:bottom();
 					default: return new ExtSignDomain(ExtSign.ZERO); 
 				}
 			case PLUS:
 				switch(right.sign) {
 					case PLUS:return new ExtSignDomain(ExtSign.PLUS); 
 					case PLUS_ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
-					case ZERO:return new ExtSignDomain(ExtSign.BOTTOM); 
+					case ZERO:bottom();
 					case MINUS:return new ExtSignDomain(ExtSign.MINUS); 
 					case MINUS_ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO); 
-					default:return new ExtSignDomain(ExtSign.TOP); 
+					default:return top();
 				}
 			case PLUS_ZERO:
 				switch(right.sign) {
@@ -316,17 +315,17 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 					case PLUS_ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
 					case MINUS:return new ExtSignDomain(ExtSign.MINUS_ZERO); 
 					case MINUS_ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO); 
-					case ZERO:return new ExtSignDomain(ExtSign.BOTTOM); 
-					default: return new ExtSignDomain(ExtSign.TOP); 
+					case ZERO:bottom();
+					default: return top();
 				}
 			case MINUS:
 				switch(right.sign) {
 					case MINUS: return new ExtSignDomain(ExtSign.PLUS); 
 					case MINUS_ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
-					case ZERO:return new ExtSignDomain(ExtSign.BOTTOM); 
+					case ZERO:bottom();
 					case PLUS:return new ExtSignDomain(ExtSign.MINUS);
 					case PLUS_ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO);
-					default: return new ExtSignDomain(ExtSign.TOP); 
+					default: return top(); 
 				}
 			case MINUS_ZERO:
 				switch(right.sign) {
@@ -334,10 +333,10 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 					case PLUS_ZERO:return new ExtSignDomain(ExtSign.MINUS_ZERO);
 					case MINUS:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
 					case MINUS_ZERO:return new ExtSignDomain(ExtSign.PLUS_ZERO); 
-					case ZERO:return new ExtSignDomain(ExtSign.BOTTOM); 
-					default: return new ExtSignDomain(ExtSign.TOP); 
+					case ZERO:bottom();
+					default: return top();
 				}
-			default: return new ExtSignDomain(ExtSign.TOP); 
+			default: return top();
 		}
 		}
 		return this.top();
