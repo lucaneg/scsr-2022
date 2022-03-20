@@ -7,6 +7,7 @@ import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.operator.AdditionOperator;
 import it.unive.lisa.symbolic.value.operator.DivisionOperator;
 import it.unive.lisa.symbolic.value.operator.Multiplication;
@@ -32,7 +33,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 		this.sign = value;
 	}
 	////////////////////////////
-
+	
 	@Override
 	protected ExtSignDomain lubAux(ExtSignDomain other) throws SemanticException { 
 		switch (this.sign){
@@ -148,7 +149,8 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     public ExtSignDomain bottom() {
         return BOTTOM;
     }
-
+    
+    
     private ExtSignDomain negate() {
         if (sign == ExtSign.MINUS)
             return new ExtSignDomain(ExtSign.PLUS);
@@ -168,7 +170,21 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
             return arg.negate();
         return top();
     }
-
+    
+    @Override
+    protected ExtSignDomain evalNonNullConstant(Constant constant, ProgramPoint pp) throws SemanticException {
+        if(constant.getValue() instanceof Integer) {
+            int value = (Integer) constant.getValue();
+            if (value > 0)
+                return new ExtSignDomain(ExtSign.PLUS);
+            else if (value == 0)
+                return new ExtSignDomain(ExtSign.ZERO);
+            else
+                return new ExtSignDomain(ExtSign.MINUS);
+        }
+        return top();
+    }
+    
     @Override
 	protected ExtSignDomain evalBinaryExpression(BinaryOperator operator, ExtSignDomain left, ExtSignDomain right,
 			ProgramPoint pp) throws SemanticException {
