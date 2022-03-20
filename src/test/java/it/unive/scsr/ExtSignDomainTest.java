@@ -16,7 +16,7 @@ import org.junit.Test;
 public class ExtSignDomainTest {
 
 	@Test
-	public void testSigns() throws ParsingException, AnalysisException {
+	public void testExtSignDomainTest() throws ParsingException, AnalysisException {
 		Program program = IMPFrontend.processFile("inputs/signs.imp");
 		
 		LiSAConfiguration conf = new LiSAConfiguration();

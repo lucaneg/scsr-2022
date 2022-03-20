@@ -240,7 +240,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                             return TOP;
                     }
                 case ZERO:
-                    return right;
+                    return right.negate();
                 case TOP:
                 default:
                     return TOP;
