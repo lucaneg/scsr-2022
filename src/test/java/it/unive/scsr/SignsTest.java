@@ -27,7 +27,7 @@ public class SignsTest {
 		conf.setAbstractState(
 				new SimpleAbstractState<>(
 						new MonolithicHeap(), // THIS IS THE HEAP DOMAIN 
-						new ValueEnvironment<>(new Signs()), // THIS IS THE VALUE DOMAIN 
+						new ValueEnvironment<>(new ExtSignDomain()), // THIS IS THE VALUE DOMAIN
 						new TypeEnvironment<>(new InferredTypes())) // DOMAIN FOR TYPE ANALYSIS
 				);
 		
