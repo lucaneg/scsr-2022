@@ -462,7 +462,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain>{
 			case TOP:
 				switch(right.extSign) {
 				case ZERO:
-					return ZERO;
+					return BOTTOM;
 				case MINUS:
 				case PLUS:
 					return TOP;
