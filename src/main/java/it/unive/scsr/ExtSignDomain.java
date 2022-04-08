@@ -19,18 +19,18 @@ import java.util.Objects;
 import static it.unive.scsr.ExtSignDomain.ExtSign.*;
 
 public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
- 
+
     private static final ExtSignDomain TOP = new ExtSignDomain(ExtSignDomain.ExtSign.TOP);
     private static final ExtSignDomain BOTTOM = new ExtSignDomain(ExtSignDomain.ExtSign.BOTTOM);
 
     enum ExtSign {
-        BOTTOM, NEGATIVE, POSITIVE, NIL, NILPOSITIVE, NILNEGATIVE, TOP
+        TOP, BOTTOM, POSITIVE, NEGATIVE, EMPTY, EMPTYPOSITIVE, EMPTYNEGATIVE
     }
 
-    private final ExtSign sign;
+    private final ExtSign _sign;
 
-    public ExtSignDomain(ExtSign sign) {
-        this.sign = sign;
+    public ExtSignDomain(ExtSign _sign) {
+        this._sign = _sign;
     }
 
     public ExtSignDomain() {
@@ -39,59 +39,40 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 
     @Override
     protected ExtSignDomain lubAux(ExtSignDomain other) throws SemanticException {
-        switch(this.sign){
-            case NEGATIVE:
-                switch(other.sign){
-                    case NIL:
-                    case NILNEGATIVE:
-                        return new ExtSignDomain(ExtSign.NILNEGATIVE);
-                    case POSITIVE:
-                    case NILPOSITIVE:
-                    default:
-                        return TOP;
-                }
-            case NIL:
-                switch(other.sign){
-                    case NILNEGATIVE:
-                    case NEGATIVE:
-                        return new ExtSignDomain(ExtSign.NILNEGATIVE);
-                    case NILPOSITIVE:
-                    case POSITIVE:
-                        return new ExtSignDomain(ExtSign.NILPOSITIVE);
-                    default: 
-                        return TOP;
-                }
-            case POSITIVE:
-                switch(other.sign){
-                    case NILPOSITIVE:
-                    case NIL:
-                        return new ExtSignDomain(ExtSign.NILPOSITIVE);
-                    case NEGATIVE:
-                    case NILNEGATIVE:
-                    default:
-                        return TOP;
-                }
-            case NILNEGATIVE:
-                switch(other.sign){
-                    case NIL:
-                    case NEGATIVE:
-                        return new ExtSignDomain(ExtSign.NILNEGATIVE);
-                    case POSITIVE:
-                    case NILPOSITIVE:
-                    default:
-                        return TOP;
-                }
-            case NILPOSITIVE:
-                switch(other.sign) {
-                    case NIL:
-                    case POSITIVE:
-                        return new ExtSignDomain(ExtSign.NILPOSITIVE);
-                    case NEGATIVE:
-                    case NILNEGATIVE:
-                    default:
-                        return TOP;
-                }
-            default: return TOP;
+        if (this._sign == NEGATIVE) {
+            if (other._sign == EMPTYNEGATIVE || other._sign == EMPTY) {
+                return new ExtSignDomain(ExtSign.EMPTYNEGATIVE);
+            } else {
+                return TOP;
+            }
+        } else if (this._sign == EMPTY) {
+            if (other._sign == EMPTYNEGATIVE || other._sign == NEGATIVE) {
+                return new ExtSignDomain(ExtSign.EMPTYNEGATIVE);
+            } else if (other._sign == EMPTYPOSITIVE || other._sign == POSITIVE) {
+                return new ExtSignDomain(ExtSign.EMPTYPOSITIVE);
+            } else {
+                return TOP;
+            }
+        } else if (this._sign == POSITIVE) {
+            if (other._sign == EMPTY || other._sign == EMPTYPOSITIVE) {
+                return new ExtSignDomain(ExtSign.EMPTYPOSITIVE);
+            } else {
+                return TOP;
+            }
+        } else if (this._sign == EMPTYNEGATIVE) {
+            if (other._sign == EMPTY || other._sign == NEGATIVE) {
+                return new ExtSignDomain(ExtSign.EMPTYNEGATIVE);
+            } else {
+                return TOP;
+            }
+        } else if (this._sign == EMPTYPOSITIVE) {
+            if (other._sign == EMPTY || other._sign == POSITIVE) {
+                return new ExtSignDomain(ExtSign.EMPTYPOSITIVE);
+            } else {
+                return TOP;
+            }
+        } else {
+            return TOP;
         }
     }
 
@@ -102,23 +83,25 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 
     @Override
     protected boolean lessOrEqualAux(ExtSignDomain other) throws SemanticException {
-        return (this.sign == NEGATIVE && other.sign == NILNEGATIVE) ||
-                (this.sign == NIL && other.sign == NILNEGATIVE) || 
-                (this.sign == NIL && other.sign == ExtSign.NILPOSITIVE) || 
-                (this.sign == POSITIVE && other.sign == NILPOSITIVE); 
+        return (this._sign == NEGATIVE && other._sign == EMPTYNEGATIVE) ||
+                (this._sign == EMPTY && other._sign == EMPTYNEGATIVE) ||
+                (this._sign == EMPTY && other._sign == ExtSign.EMPTYPOSITIVE) ||
+                (this._sign == POSITIVE && other._sign == EMPTYPOSITIVE);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ExtSignDomain)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof ExtSignDomain))
+            return false;
         ExtSignDomain that = (ExtSignDomain) o;
-        return sign == that.sign;
+        return _sign == that._sign;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sign);
+        return Objects.hash(_sign);
     }
 
     @Override
@@ -132,14 +115,14 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     }
 
     private ExtSignDomain negate() {
-        if (sign == ExtSign.NEGATIVE)
+        if (_sign == ExtSign.NEGATIVE)
             return new ExtSignDomain(ExtSign.POSITIVE);
-        if (sign == ExtSign.POSITIVE)
+        if (_sign == ExtSign.POSITIVE)
             return new ExtSignDomain(ExtSign.NEGATIVE);
-        if (sign == NILPOSITIVE)
-            return new ExtSignDomain(NILNEGATIVE);
-        if (sign == NILNEGATIVE)
-            return new ExtSignDomain(NILPOSITIVE);
+        if (_sign == EMPTYPOSITIVE)
+            return new ExtSignDomain(EMPTYNEGATIVE);
+        if (_sign == EMPTYNEGATIVE)
+            return new ExtSignDomain(EMPTYPOSITIVE);
         else
             return this;
     }
@@ -151,7 +134,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
             if (v > 0)
                 return new ExtSignDomain(POSITIVE);
             if (v == 0)
-                return new ExtSignDomain(NIL);
+                return new ExtSignDomain(EMPTY);
             else
                 return new ExtSignDomain(NEGATIVE);
         }
@@ -159,7 +142,8 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     }
 
     @Override
-    protected ExtSignDomain evalUnaryExpression(UnaryOperator operator, ExtSignDomain arg, ProgramPoint pp) throws SemanticException {
+    protected ExtSignDomain evalUnaryExpression(UnaryOperator operator, ExtSignDomain arg, ProgramPoint pp)
+            throws SemanticException {
         // We evaluate just this case since we are considering just the integer numbers
         if (operator instanceof NumericNegation)
             return arg.negate();
@@ -168,216 +152,161 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     }
 
     @Override
-    protected ExtSignDomain evalBinaryExpression(BinaryOperator operator, ExtSignDomain left, ExtSignDomain right, ProgramPoint pp) throws SemanticException {
+    protected ExtSignDomain evalBinaryExpression(BinaryOperator operator, ExtSignDomain _left, ExtSignDomain _right,
+            ProgramPoint pp) throws SemanticException {
         if (operator instanceof AdditionOperator) {
-            switch (left.sign) {
-                case NEGATIVE:
-                    switch (right.sign) {
-                        case NIL:
-                        case NEGATIVE:
-                        case NILNEGATIVE:
-                            return left;
-                        case POSITIVE:
-                        case TOP:
-                        case NILPOSITIVE:
-                        default:
-                            return TOP;
-                    }
-                case POSITIVE:
-                    switch (right.sign) {
-                        case POSITIVE:
-                        case NIL:
-                        case NILPOSITIVE:
-                            return left;
-                        case NEGATIVE:
-                        case TOP:
-                        case NILNEGATIVE:
-                        default:
-                            return TOP;
-                    }
-                case NILPOSITIVE:
-                    switch (right.sign){
-                        case NILNEGATIVE:
-                        case NIL:
-                            return left;
-                        case NEGATIVE:
-                            return right;
-                        case NILPOSITIVE:
-                        case POSITIVE:
-                        case TOP:
-                        default:
-                            return TOP;
-                    }
-                case NILNEGATIVE:
-                    switch (right.sign) {
-                        case NILPOSITIVE:
-                        case NIL:
-                            return left;
-                        case POSITIVE:
-                            return right;
-                        case NILNEGATIVE:
-                        case NEGATIVE:
-                        case TOP:
-                        default:
-                            return TOP;
-                    }
-                case TOP:
+            if (_left._sign == NEGATIVE) {
+                if (_right._sign == NEGATIVE || _right._sign == EMPTY || _right._sign == EMPTYNEGATIVE) {
+                    return _left;
+                } else {
                     return TOP;
-                case NIL:
-                    return right;
-                default:
+                }
+            } else if (_left._sign == POSITIVE) {
+                if (_right._sign == POSITIVE || _right._sign == EMPTY || _right._sign == EMPTYPOSITIVE) {
+                    return _left;
+                } else {
                     return TOP;
+                }
+            } else if (_left._sign == EMPTYPOSITIVE) {
+                if (_right._sign == EMPTYNEGATIVE || _right._sign == EMPTY) {
+                    return _left;
+                } else if (_right._sign == NEGATIVE) {
+                    return _right;
+                } else {
+                    return TOP;
+                }
+            } else if (_left._sign == EMPTYNEGATIVE) {
+                if (_right._sign == EMPTYPOSITIVE || _right._sign == EMPTY) {
+                    return _left;
+                } else if (_right._sign == POSITIVE) {
+                    return _right;
+                } else {
+                    return TOP;
+                }
+            } else if (_left._sign == TOP._sign) {
+                return TOP;
+            } else if (_left._sign == EMPTY) {
+                return _right;
+            } else {
+                return TOP;
             }
         } else if (operator instanceof SubtractionOperator) {
-            switch (left.sign) {
-                case NEGATIVE:
-                    switch (right.sign) {
-                        case NIL:
-                        case POSITIVE:
-                        case NILPOSITIVE:
-                            return left;
-                        case NEGATIVE:
-                        case TOP:
-                        case NILNEGATIVE:
-                        default:
-                            return TOP;
-                    }
-                case POSITIVE:
-                    switch (right.sign) {
-                        case NEGATIVE:
-                        case NIL:
-                            return left;
-                        case POSITIVE:
-                        case TOP:
-                        default:
-                            return TOP;
-                    }
-                case NILNEGATIVE:
-                    switch (right.sign) {
-                        case NILPOSITIVE:
-                        case NIL:
-                            return left;
-                        case POSITIVE:
-                            return new ExtSignDomain(NEGATIVE);
-                        case NILNEGATIVE:
-                        case NEGATIVE:
-                        case TOP:
-                        default:
-                            return TOP;
-                    }
-                case NILPOSITIVE:
-                    switch (right.sign) {
-                        case NILNEGATIVE:
-                        case NIL:
-                            return left;
-                        case NEGATIVE:
-                            return new ExtSignDomain(POSITIVE);
-                        case NILPOSITIVE:
-                        case POSITIVE:
-                        case TOP:
-                        default:
-                            return TOP;
-                    }
-                case TOP:
+            if (_left._sign == NEGATIVE) {
+                if (_right._sign == POSITIVE || _right._sign == EMPTY || _right._sign == EMPTYPOSITIVE) {
+                    return _left;
+                } else {
                     return TOP;
-                case NIL:
-                    return right.negate();
-                default:
+                }
+            } else if (_left._sign == POSITIVE) {
+                if (_right._sign == NEGATIVE || _right._sign == EMPTY) {
+                    return _left;
+                } else {
                     return TOP;
+                }
+            } else if (_left._sign == EMPTYPOSITIVE) {
+                if (_right._sign == EMPTYNEGATIVE || _right._sign == EMPTY) {
+                    return _left;
+                } else if (_right._sign == NEGATIVE) {
+                    return new ExtSignDomain(POSITIVE);
+                } else {
+                    return TOP;
+                }
+            } else if (_left._sign == EMPTYNEGATIVE) {
+                if (_right._sign == EMPTYPOSITIVE || _right._sign == EMPTY) {
+                    return _left;
+                } else if (_right._sign == POSITIVE) {
+                    return new ExtSignDomain(NEGATIVE);
+                } else {
+                    return TOP;
+                }
+            } else if (_left._sign == TOP._sign) {
+                return TOP;
+            } else if (_left._sign == EMPTY) {
+                return _right.negate();
+            } else {
+                return TOP;
             }
         } else if (operator instanceof Multiplication) {
-            switch (left.sign) {
-                case NEGATIVE:
-                    return right.negate();
-                case POSITIVE:
-                    return right;
-                case TOP:
+            if (_left._sign == NEGATIVE) {
+                return _right.negate();
+            } else if (_left._sign == POSITIVE) {
+                return _right;
+            } else if (_left._sign == EMPTYPOSITIVE) {
+                if (_right._sign == EMPTYPOSITIVE || _right._sign == POSITIVE) {
+                    return _left;
+                } else if (_right._sign == EMPTYNEGATIVE || _right._sign == EMPTY) {
+                    return _right;
+                } else if (_right._sign == NEGATIVE) {
+                    return new ExtSignDomain(EMPTYNEGATIVE);
+                } else {
                     return TOP;
-                case NILNEGATIVE:
-                    switch (right.sign){
-                        case NILPOSITIVE:
-                        case POSITIVE:
-                            return left;
-                        case NILNEGATIVE:
-                        case NEGATIVE:
-                            return new ExtSignDomain(NILPOSITIVE);
-                        case NIL:
-                            return right;
-                        case TOP:
-                        default:
-                            return TOP;
-                    }
-                case NILPOSITIVE:
-                    switch (right.sign){
-                        case NILPOSITIVE:
-                        case POSITIVE:
-                            return left;
-                        case NILNEGATIVE:
-                        case NIL:
-                            return right;
-                        case NEGATIVE:
-                            return new ExtSignDomain(NILNEGATIVE);
-                        case TOP:
-                        default:
-                            return TOP;
-
-                    }
-                case NIL:
-                    return new ExtSignDomain(NIL);
-                default:
+                }
+            } else if (_left._sign == EMPTYNEGATIVE) {
+                if (_right._sign == EMPTYPOSITIVE || _right._sign == POSITIVE) {
+                    return _left;
+                } else if (_right._sign == EMPTYNEGATIVE || _right._sign == NEGATIVE) {
+                    return new ExtSignDomain(EMPTYPOSITIVE);
+                } else if (_right._sign == EMPTY) {
+                    return _right;
+                } else {
                     return TOP;
+                }
+            } else if (_left._sign == TOP._sign) {
+                return TOP;
+            } else if (_left._sign == EMPTY) {
+                return new ExtSignDomain(EMPTY);
+            } else {
+                return TOP;
             }
         } else if (operator instanceof DivisionOperator) {
-            if (right.sign == NIL ||
-                    right.sign == NILPOSITIVE ||
-                    right.sign == NILNEGATIVE)
+            if (_right._sign == EMPTY ||
+                    _right._sign == EMPTYPOSITIVE ||
+                    _right._sign == EMPTYNEGATIVE)
                 return BOTTOM;
 
-            switch (left.sign) {
-                case NEGATIVE:
-                    return right.negate();
-                case POSITIVE:
-                    return right;
-                case NILNEGATIVE:
-                    switch (right.sign){
-                        case POSITIVE:
-                            return left;
-                        case NEGATIVE:
-                            return new ExtSignDomain(NILPOSITIVE);
-                        case TOP:
-                        default:
-                            return TOP;
-                    }
-                case NILPOSITIVE:
-                    switch (right.sign){
-                        case POSITIVE:
-                            return left;
-                        case NEGATIVE:
-                            return new ExtSignDomain(NILNEGATIVE);
-                        case TOP:
-                        default:
-                            return TOP;
-
-                    }
-                case TOP:
+            if (_left._sign == NEGATIVE) {
+                return _right.negate();
+            } else if (_left._sign == POSITIVE) {
+                return _right;
+            } else if (_left._sign == EMPTYPOSITIVE) {
+                if (_right._sign == POSITIVE) {
+                    return _left;
+                } else if (_right._sign == NEGATIVE) {
+                    return new ExtSignDomain(EMPTYPOSITIVE);
+                } else {
                     return TOP;
-                case NIL:
-                    return new ExtSignDomain(NIL);
-                default:
+                }
+            } else if (_left._sign == EMPTYNEGATIVE) {
+                if (_right._sign == POSITIVE) {
+                    return _left;
+                } else if (_right._sign == NEGATIVE) {
+                    return new ExtSignDomain(EMPTYPOSITIVE);
+                } else {
                     return TOP;
+                }
+            } else if (_left._sign == TOP._sign) {
+                return TOP;
+            } else if (_left._sign == EMPTY) {
+                return new ExtSignDomain(EMPTY);
+            } else {
+                return TOP;
             }
         }
         return top();
     }
     // IMPLEMENTATION NOTE:
-	// the code below is outside of the scope of the course. You can uncomment it to get
-	// your code to compile. Beware that the code is written expecting that a field named 
-	// "sign" containing an enumeration (similar to the one saw during class) exists in 
-	// this class: if you name it differently, change also the code below to make it work 
-	// by just using the name of your choice instead of "sign"
-	
-	@Override
-	public DomainRepresentation representation() {
-		return new StringRepresentation(sign);
-	}
+    // the code below is outside of the scope of the course. You can uncomment it to
+    // get
+    // your code to compile. Beware that the code is written expecting that a field
+    // named
+    // "_sign" containing an enumeration (similar to the one saw during class)
+    // exists in
+    // this class: if you name it differently, change also the code below to make it
+    // work
+    // by just using the name of your choice instead of "_sign"
+
+    @Override
+    public DomainRepresentation representation() {
+        return new StringRepresentation(_sign);
+    }
 }

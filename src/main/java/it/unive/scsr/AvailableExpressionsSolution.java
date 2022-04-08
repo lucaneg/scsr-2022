@@ -24,14 +24,14 @@ public class AvailableExpressionsSolution
 		implements
 		DataflowElement<DefiniteForwardDataflowDomain<AvailableExpressionsSolution>, AvailableExpressionsSolution> {
 
-	private final ValueExpression expression;
+	private final ValueExpression exp;
 
 	public AvailableExpressionsSolution() {
 		this(null);
 	}
 
-	private AvailableExpressionsSolution(ValueExpression expression) {
-		this.expression = expression;
+	private AvailableExpressionsSolution(ValueExpression exp) {
+		this.exp = exp;
 	}
 
 	@Override
@@ -41,96 +41,96 @@ public class AvailableExpressionsSolution
 
 	@Override
 	public Collection<Identifier> getInvolvedIdentifiers() {
-		return getIdentifierOperands(expression);
+		return getIdentifierOperands(exp);
 	}
 
-	private static Collection<Identifier> getIdentifierOperands(ValueExpression expression) {
-		Collection<Identifier> result = new HashSet<>();
+	private static Collection<Identifier> getIdentifierOperands(ValueExpression exp) {
+		Collection<Identifier> res = new HashSet<>();
 
-		if (expression == null)
-			return result;
+		if (exp == null)
+			return res;
 
-		if (expression instanceof Identifier)
-			result.add((Identifier) expression);
+		if (exp instanceof Identifier)
+			res.add((Identifier) exp);
 
-		if (expression instanceof UnaryExpression)
-			result.addAll(getIdentifierOperands((ValueExpression) ((UnaryExpression) expression).getExpression()));
+		if (exp instanceof UnaryExpression)
+			res.addAll(getIdentifierOperands((ValueExpression) ((UnaryExpression) exp).getExpression()));
 
-		if (expression instanceof BinaryExpression) {
-			BinaryExpression binary = (BinaryExpression) expression;
-			result.addAll(getIdentifierOperands((ValueExpression) binary.getLeft()));
-			result.addAll(getIdentifierOperands((ValueExpression) binary.getRight()));
+		if (exp instanceof BinaryExpression) {
+			BinaryExpression binary = (BinaryExpression) exp;
+			res.addAll(getIdentifierOperands((ValueExpression) binary.getLeft()));
+			res.addAll(getIdentifierOperands((ValueExpression) binary.getRight()));
 		}
 
-		if (expression instanceof TernaryExpression) {
-			TernaryExpression ternary = (TernaryExpression) expression;
-			result.addAll(getIdentifierOperands((ValueExpression) ternary.getLeft()));
-			result.addAll(getIdentifierOperands((ValueExpression) ternary.getMiddle()));
-			result.addAll(getIdentifierOperands((ValueExpression) ternary.getRight()));
+		if (exp instanceof TernaryExpression) {
+			TernaryExpression ternary = (TernaryExpression) exp;
+			res.addAll(getIdentifierOperands((ValueExpression) ternary.getLeft()));
+			res.addAll(getIdentifierOperands((ValueExpression) ternary.getMiddle()));
+			res.addAll(getIdentifierOperands((ValueExpression) ternary.getRight()));
 		}
 
-		return result;
+		return res;
 	}
 
 	@Override
-	public Collection<AvailableExpressionsSolution> gen(Identifier id, ValueExpression expression, ProgramPoint pp,
+	public Collection<AvailableExpressionsSolution> gen(Identifier id, ValueExpression exp, ProgramPoint pp,
 			DefiniteForwardDataflowDomain<AvailableExpressionsSolution> domain) {
-		Collection<AvailableExpressionsSolution> result = new HashSet<>();
-		AvailableExpressionsSolution ae = new AvailableExpressionsSolution(expression);
-		if (!ae.getInvolvedIdentifiers().contains(id) && filter(expression))
-			result.add(ae);
-		return result;
+		Collection<AvailableExpressionsSolution> res = new HashSet<>();
+		AvailableExpressionsSolution ae = new AvailableExpressionsSolution(exp);
+		if (!ae.getInvolvedIdentifiers().contains(id) && filter(exp))
+			res.add(ae);
+		return res;
 	}
 
 	@Override
-	public Collection<AvailableExpressionsSolution> gen(ValueExpression expression, ProgramPoint pp,
+	public Collection<AvailableExpressionsSolution> gen(ValueExpression exp, ProgramPoint pp,
 			DefiniteForwardDataflowDomain<AvailableExpressionsSolution> domain) {
-		Collection<AvailableExpressionsSolution> result = new HashSet<>();
-		AvailableExpressionsSolution ae = new AvailableExpressionsSolution(expression);
-		if (filter(expression))
-			result.add(ae);
-		return result;
+		Collection<AvailableExpressionsSolution> res = new HashSet<>();
+		AvailableExpressionsSolution ae = new AvailableExpressionsSolution(exp);
+		if (filter(exp))
+			res.add(ae);
+		return res;
 	}
 
-	private static boolean filter(ValueExpression expression) {
-		if (expression instanceof Identifier)
+	private static boolean filter(ValueExpression exp) {
+		if (exp instanceof Identifier)
 			return false;
-		if (expression instanceof Constant)
+		if (exp instanceof Constant)
 			return false;
-		if (expression instanceof Skip)
+		if (exp instanceof Skip)
 			return false;
-		if (expression instanceof PushAny)
+		if (exp instanceof PushAny)
 			return false;
 		return true;
 	}
 
 	@Override
-	public Collection<AvailableExpressionsSolution> kill(Identifier id, ValueExpression expression, ProgramPoint pp,
-			DefiniteForwardDataflowDomain<AvailableExpressionsSolution> domain) {
-		Collection<AvailableExpressionsSolution> result = new HashSet<>();
+	public Collection<AvailableExpressionsSolution> kill(Identifier id, ValueExpression exp, ProgramPoint pp,
+			DefiniteForwardDataflowDomain<AvailableExpressionsSolution> domain) { 
+		Collection<AvailableExpressionsSolution> res = new HashSet<>();
 
 		for (AvailableExpressionsSolution ae : domain.getDataflowElements()) {
-			Collection<Identifier> ids = getIdentifierOperands(ae.expression);
+			Collection<Identifier> ids = getIdentifierOperands(ae.exp);
 
 			if (ids.contains(id))
-				result.add(ae);
+				res.add(ae);
 		}
 
-		return result;
+		return res;
 	}
 
 	@Override
-	public Collection<AvailableExpressionsSolution> kill(ValueExpression expression, ProgramPoint pp,
-			DefiniteForwardDataflowDomain<AvailableExpressionsSolution> domain) {
+	public Collection<AvailableExpressionsSolution> kill(ValueExpression exp, ProgramPoint pp,
+			DefiniteForwardDataflowDomain<AvailableExpressionsSolution> domain) { 
 		return Collections.emptyList();
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((expression == null) ? 0 : expression.hashCode());
-		return result;
+		final int _prime = 31;
+		int res = 1;
+		res = _prime * res + ((exp == null) ? 0 : exp.hashCode());
+		return res;
 	}
 
 	@Override
@@ -142,26 +142,26 @@ public class AvailableExpressionsSolution
 		if (getClass() != obj.getClass())
 			return false;
 		AvailableExpressionsSolution other = (AvailableExpressionsSolution) obj;
-		if (expression == null) {
-			if (other.expression != null)
+		if (exp == null) {
+			if (other.exp != null)
 				return false;
-		} else if (!expression.equals(other.expression))
+		} else if (!exp.equals(other.exp))
 			return false;
 		return true;
 	}
 
 	@Override
 	public DomainRepresentation representation() {
-		return new StringRepresentation(expression);
+		return new StringRepresentation(exp);
 	}
 
 	@Override
-	public AvailableExpressionsSolution pushScope(ScopeToken scope) throws SemanticException {
-		return new AvailableExpressionsSolution((ValueExpression) expression.pushScope(scope));
+	public AvailableExpressionsSolution pushScope(ScopeToken _scope) throws SemanticException {
+		return new AvailableExpressionsSolution((ValueExpression) exp.pushScope(_scope));
 	}
 
 	@Override
-	public AvailableExpressionsSolution popScope(ScopeToken scope) throws SemanticException {
-		return new AvailableExpressionsSolution((ValueExpression) expression.popScope(scope));
+	public AvailableExpressionsSolution popScope(ScopeToken _scope) throws SemanticException {
+		return new AvailableExpressionsSolution((ValueExpression) exp.popScope(_scope));
 	}
 }

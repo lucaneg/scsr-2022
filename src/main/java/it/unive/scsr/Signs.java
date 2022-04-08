@@ -22,22 +22,22 @@ public class Signs extends BaseNonRelationalValueDomain<Signs> {
 	private static final Signs BOTTOM = new Signs(Sign.BOTTOM);
 
 	enum Sign {
-		BOTTOM, MINUS, ZERO, PLUS, TOP;
+		TOP, BOTTOM, POSITIVE, NEGATIVE, ZERO;
 	}
 
-	private final Sign sign;
+	private final Sign _sign;
 
 	public Signs() {
 		this(Sign.TOP);
 	}
 
-	public Signs(Sign sign) {
-		this.sign = sign;
+	public Signs(Sign _sign) {
+		this._sign = _sign;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(sign);
+		return Objects.hash(_sign);
 	}
 
 	@Override
@@ -49,7 +49,7 @@ public class Signs extends BaseNonRelationalValueDomain<Signs> {
 		if (getClass() != obj.getClass())
 			return false;
 		Signs other = (Signs) obj;
-		return sign == other.sign;
+		return _sign == other._sign;
 	}
 
 	@Override
@@ -79,7 +79,7 @@ public class Signs extends BaseNonRelationalValueDomain<Signs> {
 
 	@Override
 	public DomainRepresentation representation() {
-		return new StringRepresentation(sign);
+		return new StringRepresentation(_sign);
 	}
 
 	@Override
@@ -87,20 +87,20 @@ public class Signs extends BaseNonRelationalValueDomain<Signs> {
 		if (constant.getValue() instanceof Integer) {
 			int v = (Integer) constant.getValue();
 			if (v > 0)
-				return new Signs(Sign.PLUS);
+				return new Signs(Sign.POSITIVE);
 			else if (v == 0)
 				return new Signs(Sign.ZERO);
 			else
-				return new Signs(Sign.MINUS);
+				return new Signs(Sign.NEGATIVE);
 		}
 		return top();
 	}
 
 	private Signs negate() {
-		if (sign == Sign.MINUS)
-			return new Signs(Sign.PLUS);
-		else if (sign == Sign.PLUS)
-			return new Signs(Sign.MINUS);
+		if (_sign == Sign.NEGATIVE)
+			return new Signs(Sign.POSITIVE);
+		else if (_sign == Sign.POSITIVE)
+			return new Signs(Sign.NEGATIVE);
 		else
 			return this;
 	}
@@ -117,90 +117,69 @@ public class Signs extends BaseNonRelationalValueDomain<Signs> {
 	protected Signs evalBinaryExpression(BinaryOperator operator, Signs left, Signs right, ProgramPoint pp)
 			throws SemanticException {
 		if (operator instanceof AdditionOperator) {
-			switch (left.sign) {
-			case MINUS:
-				switch (right.sign) {
-				case ZERO:
-				case MINUS:
+			if (left._sign == Sign.NEGATIVE) {
+				if (right._sign == Sign.ZERO || right._sign == Sign.NEGATIVE) {
 					return left;
-				case PLUS:
-				case TOP:
-				default:
+				} else if (right._sign == Sign.POSITIVE || right._sign == Sign.TOP) {
 					return TOP;
 				}
-			case PLUS:
-				switch (right.sign) {
-				case PLUS:
-				case ZERO:
+			} else if (left._sign == Sign.POSITIVE) {
+				if (right._sign == Sign.ZERO || right._sign == Sign.POSITIVE) {
 					return left;
-				case MINUS:
-				case TOP:
-				default:
+				} else if (right._sign == Sign.TOP || right._sign == Sign.NEGATIVE) {
 					return TOP;
 				}
-			case TOP:
+			} else if (left._sign == Sign.TOP) {
 				return TOP;
-			case ZERO:
+			} else if (left._sign == Sign.ZERO) {
 				return right;
-			default:
+			} else {
 				return TOP;
 			}
 		} else if (operator instanceof SubtractionOperator) {
-			switch (left.sign) {
-			case MINUS:
-				switch (right.sign) {
-				case ZERO:
-				case PLUS:
+			if (left._sign == Sign.POSITIVE) {
+				if (right._sign == Sign.ZERO || right._sign == Sign.NEGATIVE) {
 					return left;
-				case MINUS:
-				case TOP:
-				default:
+				} else if (right._sign == Sign.POSITIVE || right._sign == Sign.TOP) {
 					return TOP;
 				}
-			case PLUS:
-				switch (right.sign) {
-				case MINUS:
-				case ZERO:
+			} else if (left._sign == Sign.NEGATIVE) {
+				if (right._sign == Sign.ZERO || right._sign == Sign.POSITIVE) {
 					return left;
-				case PLUS:
-				case TOP:
-				default:
+				} else if (right._sign == Sign.TOP || right._sign == Sign.NEGATIVE) {
 					return TOP;
 				}
-			case TOP:
+			} else if (left._sign == Sign.TOP) {
 				return TOP;
-			case ZERO:
+			} else if (left._sign == Sign.ZERO) {
 				return right;
-			default:
+			} else {
 				return TOP;
 			}
 		} else if (operator instanceof Multiplication) {
-			switch (left.sign) {
-			case MINUS:
-				return right.negate();
-			case PLUS:
+			if (left._sign == Sign.POSITIVE) {
 				return right;
-			case TOP:
+			} else if (left._sign == Sign.NEGATIVE) {
+				return right.negate();
+			} else if (left._sign == Sign.TOP) {
 				return TOP;
-			case ZERO:
+			} else if (left._sign == Sign.ZERO) {
 				return new Signs(Sign.ZERO);
-			default:
+			} else {
 				return TOP;
 			}
 		} else if (operator instanceof DivisionOperator) {
-			if (right.sign == Sign.ZERO)
+			if (right._sign == Sign.ZERO)
 				return BOTTOM;
-
-			switch (left.sign) {
-			case MINUS:
-				return right.negate();
-			case PLUS:
+			if (left._sign == Sign.POSITIVE) {
 				return right;
-			case TOP:
+			} else if (left._sign == Sign.NEGATIVE) {
+				return right.negate();
+			} else if (left._sign == Sign.TOP) {
 				return TOP;
-			case ZERO:
+			} else if (left._sign == Sign.ZERO) {
 				return new Signs(Sign.ZERO);
-			default:
+			} else {
 				return TOP;
 			}
 		}

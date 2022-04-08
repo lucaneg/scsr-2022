@@ -17,14 +17,14 @@ import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
 
 public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignDomainSolution> {
 
-	private final Sign sign;
+	private final Sign _sign;
 
 	public ExtSignDomainSolution() {
 		this(Sign.TOP);
 	}
 
-	private ExtSignDomainSolution(Sign sign) {
-		this.sign = sign;
+	private ExtSignDomainSolution(Sign _sign) {
+		this._sign = _sign;
 	}
 
 	enum Sign {
@@ -85,7 +85,7 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				// mul(top, -) = top
 				// mul(top, 0+) = top
 				// mul(top, 0-) = top
-				return other == BOTTOM ? other : other == ZERO ? ZERO : TOP;
+				return other == BOTTOM ? other : other == EMPTY ? EMPTY : TOP;
 			}
 
 			@Override
@@ -97,7 +97,7 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				// div(top, -) = top
 				// div(top, 0+) = top
 				// div(top, 0-) = top
-				return other == ZERO || other == BOTTOM ? BOTTOM : TOP;
+				return other == EMPTY || other == BOTTOM ? BOTTOM : TOP;
 			}
 
 			@Override
@@ -106,11 +106,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 			}
 		},
 
-		POS {
+		POSITIVE {
 
 			@Override
 			Sign minus() {
-				return NEG;
+				return NEGATIVE;
 			}
 
 			@Override
@@ -124,7 +124,7 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				// add(+, 0-) = top
 				if (other == TOP || other == BOTTOM)
 					return other;
-				if (other == POS || other == POS_OR_ZERO || other == ZERO)
+				if (other == POSITIVE || other == POSITIVE_OR_EMPTY || other == EMPTY)
 					return this;
 
 				return TOP;
@@ -153,10 +153,10 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				// div(+, 0-) = -
 				if (other == TOP || other == BOTTOM)
 					return other;
-				if (other == POS || other == POS_OR_ZERO)
-					return POS;
-				if (other == NEG || other == NEG_OR_ZERO)
-					return NEG;
+				if (other == POSITIVE || other == POSITIVE_OR_EMPTY)
+					return POSITIVE;
+				if (other == NEGATIVE || other == NEGATIVE_OR_EMPTY)
+					return NEGATIVE;
 				return BOTTOM;
 			}
 
@@ -166,11 +166,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 			}
 		},
 
-		NEG {
+		NEGATIVE {
 
 			@Override
 			Sign minus() {
-				return POS;
+				return POSITIVE;
 			}
 
 			@Override
@@ -185,8 +185,8 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				if (other == TOP || other == BOTTOM)
 					return other;
 
-				if (other == NEG || other == ZERO || other == NEG_OR_ZERO)
-					return NEG;
+				if (other == NEGATIVE || other == EMPTY || other == NEGATIVE_OR_EMPTY)
+					return NEGATIVE;
 
 				return TOP;
 			}
@@ -203,18 +203,18 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				if (other == TOP || other == BOTTOM)
 					return other;
 
-				if (other == POS)
+				if (other == POSITIVE)
 					return this;
 
-				if (other == ZERO)
+				if (other == EMPTY)
 					return other;
 
-				if (other == NEG)
-					return POS;
+				if (other == NEGATIVE)
+					return POSITIVE;
 
-				if (other == POS_OR_ZERO)
-					return NEG_OR_ZERO;
-				return POS_OR_ZERO;
+				if (other == POSITIVE_OR_EMPTY)
+					return NEGATIVE_OR_EMPTY;
+				return POSITIVE_OR_EMPTY;
 			}
 
 			@Override
@@ -229,11 +229,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				if (other == TOP || other == BOTTOM)
 					return other;
 
-				if (other == POS || other == POS_OR_ZERO)
-					return NEG;
+				if (other == POSITIVE || other == POSITIVE_OR_EMPTY)
+					return NEGATIVE;
 
-				if (other == NEG || other == NEG_OR_ZERO)
-					return POS;
+				if (other == NEGATIVE || other == NEGATIVE_OR_EMPTY)
+					return POSITIVE;
 
 				return BOTTOM;
 			}
@@ -244,11 +244,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 			}
 		},
 
-		ZERO {
+		EMPTY {
 
 			@Override
 			Sign minus() {
-				return ZERO;
+				return EMPTY;
 			}
 
 			@Override
@@ -272,7 +272,7 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				// mul(0, -) = 0
 				// mul(0, 0+) = 0
 				// mul(0, 0-) = 0
-				return other == BOTTOM ? other : ZERO;
+				return other == BOTTOM ? other : EMPTY;
 			}
 
 			@Override
@@ -284,7 +284,7 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				// div(0, -) = 0
 				// div(0, 0+) = 0
 				// div(0, 0-) = 0
-				return other == ZERO || other == BOTTOM ? BOTTOM : ZERO;
+				return other == EMPTY || other == BOTTOM ? BOTTOM : EMPTY;
 			}
 
 			@Override
@@ -293,11 +293,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 			}
 		},
 
-		POS_OR_ZERO {
+		POSITIVE_OR_EMPTY {
 
 			@Override
 			Sign minus() {
-				return NEG_OR_ZERO;
+				return NEGATIVE_OR_EMPTY;
 			}
 
 			@Override
@@ -312,11 +312,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				if (other == TOP || other == BOTTOM)
 					return other;
 
-				if (other == POS || other == POS_OR_ZERO)
+				if (other == POSITIVE || other == POSITIVE_OR_EMPTY)
 					return other;
 
-				if (other == ZERO)
-					return POS_OR_ZERO;
+				if (other == EMPTY)
+					return POSITIVE_OR_EMPTY;
 
 				return TOP;
 			}
@@ -333,13 +333,13 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				if (other == TOP || other == BOTTOM)
 					return other;
 
-				if (other == POS || other == POS_OR_ZERO)
-					return POS_OR_ZERO;
+				if (other == POSITIVE || other == POSITIVE_OR_EMPTY)
+					return POSITIVE_OR_EMPTY;
 
-				if (other == NEG || other == NEG_OR_ZERO)
-					return NEG_OR_ZERO;
+				if (other == NEGATIVE || other == NEGATIVE_OR_EMPTY)
+					return NEGATIVE_OR_EMPTY;
 
-				return ZERO;
+				return EMPTY;
 			}
 
 			@Override
@@ -354,11 +354,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				if (other == TOP || other == BOTTOM)
 					return other;
 
-				if (other == POS || other == POS_OR_ZERO)
-					return POS_OR_ZERO;
+				if (other == POSITIVE || other == POSITIVE_OR_EMPTY)
+					return POSITIVE_OR_EMPTY;
 
-				if (other == NEG || other == NEG_OR_ZERO)
-					return NEG_OR_ZERO;
+				if (other == NEGATIVE || other == NEGATIVE_OR_EMPTY)
+					return NEGATIVE_OR_EMPTY;
 
 				return BOTTOM;
 			}
@@ -369,11 +369,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 			}
 		},
 
-		NEG_OR_ZERO {
+		NEGATIVE_OR_EMPTY {
 
 			@Override
 			Sign minus() {
-				return POS_OR_ZERO;
+				return POSITIVE_OR_EMPTY;
 			}
 
 			@Override
@@ -388,10 +388,10 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				if (other == TOP || other == BOTTOM)
 					return other;
 
-				if (other == ZERO || other == NEG_OR_ZERO)
-					return NEG_OR_ZERO;
+				if (other == EMPTY || other == NEGATIVE_OR_EMPTY)
+					return NEGATIVE_OR_EMPTY;
 
-				if (other == NEG)
+				if (other == NEGATIVE)
 					return other;
 
 				return TOP;
@@ -409,13 +409,13 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				if (other == TOP || other == BOTTOM)
 					return other;
 
-				if (other == POS || other == POS_OR_ZERO)
-					return NEG_OR_ZERO;
+				if (other == POSITIVE || other == POSITIVE_OR_EMPTY)
+					return NEGATIVE_OR_EMPTY;
 
-				if (other == ZERO)
+				if (other == EMPTY)
 					return other;
 
-				return POS_OR_ZERO;
+				return POSITIVE_OR_EMPTY;
 			}
 
 			@Override
@@ -430,12 +430,12 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 				if (other == TOP || other == BOTTOM)
 					return other;
 
-				if (other == POS || other == POS_OR_ZERO)
-					return NEG_OR_ZERO;
+				if (other == POSITIVE || other == POSITIVE_OR_EMPTY)
+					return NEGATIVE_OR_EMPTY;
 
-				if (other == ZERO)
+				if (other == EMPTY)
 					return BOTTOM;
-				return POS_OR_ZERO;
+				return POSITIVE_OR_EMPTY;
 			}
 
 			@Override
@@ -468,12 +468,12 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 
 	@Override
 	public boolean isTop() {
-		return this.sign == Sign.TOP;
+		return this._sign == Sign.TOP;
 	}
 
 	@Override
 	public boolean isBottom() {
-		return this.sign == Sign.BOTTOM;
+		return this._sign == Sign.BOTTOM;
 	}
 
 	@Override
@@ -481,11 +481,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 		if (constant.getValue() instanceof Integer) {
 			int c = (int) constant.getValue();
 			if (c == 0)
-				return new ExtSignDomainSolution(Sign.ZERO);
+				return new ExtSignDomainSolution(Sign.EMPTY);
 			else if (c > 0)
-				return new ExtSignDomainSolution(Sign.POS);
+				return new ExtSignDomainSolution(Sign.POSITIVE);
 			else
-				return new ExtSignDomainSolution(Sign.NEG);
+				return new ExtSignDomainSolution(Sign.NEGATIVE);
 		}
 		return top();
 	}
@@ -494,7 +494,7 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 	protected ExtSignDomainSolution evalUnaryExpression(UnaryOperator operator, ExtSignDomainSolution arg,
 			ProgramPoint pp) {
 		if (operator instanceof NumericNegation)
-			return new ExtSignDomainSolution(arg.sign.minus());
+			return new ExtSignDomainSolution(arg._sign.minus());
 		return top();
 	}
 
@@ -503,13 +503,13 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 			ExtSignDomainSolution right,
 			ProgramPoint pp) {
 		if (operator instanceof AdditionOperator)
-			return new ExtSignDomainSolution(left.sign.add(right.sign));
+			return new ExtSignDomainSolution(left._sign.add(right._sign));
 		if (operator instanceof DivisionOperator)
-			return new ExtSignDomainSolution(left.sign.div(right.sign));
+			return new ExtSignDomainSolution(left._sign.div(right._sign));
 		if (operator instanceof Multiplication)
-			return new ExtSignDomainSolution(left.sign.mul(right.sign));
+			return new ExtSignDomainSolution(left._sign.mul(right._sign));
 		if (operator instanceof SubtractionOperator)
-			return new ExtSignDomainSolution(left.sign.add(right.sign.minus()));
+			return new ExtSignDomainSolution(left._sign.add(right._sign.minus()));
 		return top();
 	}
 
@@ -520,18 +520,18 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 		if (other.lessOrEqual(this))
 			return this;
 
-		if (sign == Sign.ZERO) {
-			if (other.sign == Sign.POS)
-				return new ExtSignDomainSolution(Sign.POS_OR_ZERO);
-			else if (other.sign == Sign.NEG)
-				return new ExtSignDomainSolution(Sign.NEG_OR_ZERO);
+		if (_sign == Sign.EMPTY) {
+			if (other._sign == Sign.POSITIVE)
+				return new ExtSignDomainSolution(Sign.POSITIVE_OR_EMPTY);
+			else if (other._sign == Sign.NEGATIVE)
+				return new ExtSignDomainSolution(Sign.NEGATIVE_OR_EMPTY);
 		}
 
-		if (other.sign == Sign.ZERO) {
-			if (sign == Sign.POS)
-				return new ExtSignDomainSolution(Sign.POS_OR_ZERO);
-			else if (sign == Sign.NEG)
-				return new ExtSignDomainSolution(Sign.NEG_OR_ZERO);
+		if (other._sign == Sign.EMPTY) {
+			if (_sign == Sign.POSITIVE)
+				return new ExtSignDomainSolution(Sign.POSITIVE_OR_EMPTY);
+			else if (_sign == Sign.NEGATIVE)
+				return new ExtSignDomainSolution(Sign.NEGATIVE_OR_EMPTY);
 		}
 
 		return top();
@@ -544,17 +544,17 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 
 	@Override
 	protected boolean lessOrEqualAux(ExtSignDomainSolution other) throws SemanticException {
-		switch (sign) {
-		case NEG:
-			if (other.sign == Sign.NEG_OR_ZERO)
+		switch (_sign) {
+		case NEGATIVE:
+			if (other._sign == Sign.NEGATIVE_OR_EMPTY)
 				return true;
 			return false;
-		case POS:
-			if (other.sign == Sign.POS_OR_ZERO)
+		case POSITIVE:
+			if (other._sign == Sign.POSITIVE_OR_EMPTY)
 				return true;
 			return false;
-		case ZERO:
-			if (other.sign == Sign.POS_OR_ZERO || other.sign == Sign.NEG_OR_ZERO)
+		case EMPTY:
+			if (other._sign == Sign.POSITIVE_OR_EMPTY || other._sign == Sign.NEGATIVE_OR_EMPTY)
 				return true;
 			return false;
 		default:
@@ -564,9 +564,9 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
+		final int _prime = 31;
 		int result = 1;
-		result = prime * result + ((sign == null) ? 0 : sign.hashCode());
+		result = _prime * result + ((_sign == null) ? 0 : _sign.hashCode());
 		return result;
 	}
 
@@ -579,13 +579,13 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 		if (getClass() != obj.getClass())
 			return false;
 		ExtSignDomainSolution other = (ExtSignDomainSolution) obj;
-		if (sign != other.sign)
+		if (_sign != other._sign)
 			return false;
 		return true;
 	}
 
 	@Override
 	public DomainRepresentation representation() {
-		return new StringRepresentation(sign);
+		return new StringRepresentation(_sign);
 	}
 }
