@@ -39,7 +39,7 @@ public class ExtSignDomainTaskEvaluation {
 		conf.setAbstractState(
 				new SimpleAbstractState<>(
 						new MonolithicHeap(),
-						new ValueEnvironment<>(new ExtSignDomain()),
+						new ValueEnvironment<>(new ExtSignDomainSolution()),
 						new TypeEnvironment<>(new InferredTypes())));
 
 		LiSA lisa = new LiSA(conf);

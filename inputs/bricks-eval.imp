@@ -1,0 +1,11 @@
+class bricks {
+
+    f0(){
+        def a = "Ciao";
+        def b = "Mondo";
+        def c = strcat(a, b);
+        return strsub(c, 2, 4);
+    }
+
+
+}
