@@ -4,7 +4,33 @@ class bricks {
         def a = "Ciao";
         def b = "Mondo";
         def c = strcat(a, b);
-        return strsub(c, 2, 4);
+        return strsub(c, "2", "4");
+    }
+
+    f1() {
+        def a = "ciao, ";
+        def b = "";
+        if (strcon(a, "i")) {
+            b = "contiene i";
+        } else {
+            b = "non contiene";
+        }
+        return strcat(a, b);
+    }
+
+    f2(bho) {
+        def s = "";
+        def c = "";
+        if (bho) {
+            s = "ABCDEFGHI";
+        }
+        else {
+            s = "abcdefghi";
+        }
+        c = strsub(s, "2", "4");
+
+        return c;
+
     }
 
 

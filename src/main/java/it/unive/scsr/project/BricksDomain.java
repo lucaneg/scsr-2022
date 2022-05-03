@@ -1,18 +1,25 @@
 package it.unive.scsr.project;
 
+import it.unive.lisa.analysis.SemanticDomain;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
+import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.program.cfg.statement.Assignment;
 import it.unive.lisa.symbolic.value.Constant;
+import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.operator.binary.BinaryOperator;
 import it.unive.lisa.symbolic.value.operator.binary.StringConcat;
+import it.unive.lisa.symbolic.value.operator.binary.StringContains;
 import it.unive.lisa.symbolic.value.operator.ternary.StringSubstring;
 import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
 import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
 
 import java.util.LinkedList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BricksDomain extends BaseNonRelationalValueDomain<BricksDomain> {
 
@@ -53,7 +60,8 @@ public class BricksDomain extends BaseNonRelationalValueDomain<BricksDomain> {
             out.addBrick(l1.getBrick(i).lubAux(l2.getBrick(i)));
         }
 
-        return out.normalize();
+        out = out.normalize();
+        return out;
     }
 
     @Override
@@ -205,13 +213,36 @@ public class BricksDomain extends BaseNonRelationalValueDomain<BricksDomain> {
         return new BricksDomain(new Brick(1,1, str));
     }
 
-    // StringLength
+    //Contains
     @Override
-    protected BricksDomain evalUnaryExpression(UnaryOperator operator, BricksDomain arg, ProgramPoint pp) throws SemanticException {
-        return super.evalUnaryExpression(operator, arg, pp);
+    protected SemanticDomain.Satisfiability satisfiesBinaryExpression(BinaryOperator operator, BricksDomain left, BricksDomain right, ProgramPoint pp) throws SemanticException {
+        if (operator instanceof StringContains) {
+            //From the paper, we assume that the parameter to look for is a character
+            String c = right.getBrick(0).getString(0);
+            Pattern pattern = Pattern.compile("(\\D)");
+            Matcher matcher = pattern.matcher(c);
+            if (matcher.find())
+                c = matcher.group(1);
+
+            //Check if the brick are in the valid form, as specified from paper
+            for (Brick b: left.bricks) {
+                if (b.getMin().getValue() < 1 || !(b.getMin().lessOrEqual(b.getMax()))) {
+                    return SemanticDomain.Satisfiability.UNKNOWN;
+                }
+
+                //if is valid and the char c is not contained in all string return "false"
+                for (String s: b.getStrings()) {
+                    if (!s.contains(c)) {
+                        return SemanticDomain.Satisfiability.NOT_SATISFIED;
+                    }
+                }
+            }
+            return SemanticDomain.Satisfiability.SATISFIED;
+        }
+        return super.satisfiesBinaryExpression(operator, left, right, pp);
     }
 
-    // Concat, Contains, EndsWith, Equals, IndexOf, StartsWith
+    // Concat
     @Override
     protected BricksDomain evalBinaryExpression(BinaryOperator operator, BricksDomain left, BricksDomain right, ProgramPoint pp) throws SemanticException {
         if (operator instanceof StringConcat) {
@@ -223,12 +254,23 @@ public class BricksDomain extends BaseNonRelationalValueDomain<BricksDomain> {
         return super.evalBinaryExpression(operator, left, right, pp);
     }
 
-    // Replace, SubString
+    // SubString
     @Override
     protected BricksDomain evalTernaryExpression(TernaryOperator operator, BricksDomain left, BricksDomain middle, BricksDomain right, ProgramPoint pp) throws SemanticException {
         if (operator instanceof StringSubstring) {
-            int i = Integer.parseInt(middle.getBrick(0).getString(0));  //Begin
-            int j = Integer.parseInt(right.getBrick(0).getString(0));   //End
+
+            // Per problema discusso con tutor, nella strsub bisogna passare stringhe come indici,
+            // per questo per estrarre gli indici uso una regexp.
+            Pattern pattern = Pattern.compile("\"(\\d)\"");
+            Matcher matcherI = pattern.matcher(middle.getBrick(0).getString(0));
+            Matcher matcherJ = pattern.matcher(right.getBrick(0).getString(0));
+            int i = 0;  //Begin
+            int j = 0;  //End
+
+            if (matcherI.find() && matcherJ.find()) {
+                i = Integer.parseInt(matcherI.group(1));
+                j = Integer.parseInt(matcherJ.group(1));
+            }
             BricksDomain aux = left.normalize();
 
             Brick b = aux.getBrick(0);
@@ -242,11 +284,11 @@ public class BricksDomain extends BaseNonRelationalValueDomain<BricksDomain> {
                 for (String s : b.getStrings()) {
                     t.add(s.substring(i, j));
                 }
-                Brick out = new Brick(1, 1, t);
-                return new BricksDomain(out);
-            } else return top();
 
+                return new BricksDomain(new Brick(1, 1, t));
+            }
         }
+
         return top();
     }
 
