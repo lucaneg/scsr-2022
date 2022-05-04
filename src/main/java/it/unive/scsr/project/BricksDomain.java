@@ -219,7 +219,7 @@ public class BricksDomain extends BaseNonRelationalValueDomain<BricksDomain> {
         if (operator instanceof StringContains) {
             //From the paper, we assume that the parameter to look for is a character
             String c = right.getBrick(0).getString(0);
-            Pattern pattern = Pattern.compile("(\\D)");
+            Pattern pattern = Pattern.compile("(\\w)");
             Matcher matcher = pattern.matcher(c);
             if (matcher.find())
                 c = matcher.group(1);
@@ -258,7 +258,6 @@ public class BricksDomain extends BaseNonRelationalValueDomain<BricksDomain> {
     @Override
     protected BricksDomain evalTernaryExpression(TernaryOperator operator, BricksDomain left, BricksDomain middle, BricksDomain right, ProgramPoint pp) throws SemanticException {
         if (operator instanceof StringSubstring) {
-
             // Per problema discusso con tutor, nella strsub bisogna passare stringhe come indici,
             // per questo per estrarre gli indici uso una regexp.
             Pattern pattern = Pattern.compile("\"(\\d)\"");

@@ -27,10 +27,36 @@ class bricks {
         else {
             s = "abcdefghi";
         }
-        c = strsub(s, "2", "4");
 
-        return c;
+        return strsub(s, "2", "4");;
 
+    }
+
+    f3() {
+        def l = "100";
+        def query = "SELECT $ || (RETAIL/100) FROM INVENTORY WHERE ";
+
+        if (l != null) {
+            query = strcat(strcat(strcat(query, "WHOLESALE > "), l), " AND ");
+        }
+
+        def per = "SELECT TYPECODE, TYPEDESC FROM TYPES WHERE NAME = 'fish' OR NAME = 'meat'";
+        query = strcat(strcat(strcat(query, "TYPE IN ("), per), ");");
+
+        return query;
+    }
+
+    f4() {
+        def x = "aaa";
+
+        x = strcat(strcat("0", x), "1");
+        x = strcat(strcat("0", x), "1");
+        x = strcat(strcat("0", x), "1");
+        x = strcat(strcat("0", x), "1");
+        x = strcat(strcat("0", x), "1");
+        x = strcat(strcat("0", x), "1");
+
+        return x;
     }
 
 
