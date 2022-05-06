@@ -20,16 +20,13 @@ class bricks {
 
     f2(bho) {
         def s = "";
-        def c = "";
         if (bho) {
             s = "ABCDEFGHI";
         }
         else {
             s = "abcdefghi";
         }
-
         return strsub(s, "2", "4");;
-
     }
 
     f3() {
