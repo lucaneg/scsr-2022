@@ -41,6 +41,23 @@ public class StringGraph {
             throw new WrongBuildStringGraphException("MAX node cannot have son.");
     }
 
+    public StringGraph(NodeType root) {
+        assert(!(root == NodeType.CONCAT));
+        this.root = root;
+        this.sons = new ArrayList<>();
+        this.fathers = new ArrayList<>();
+    }
+
+    public void addSon(StringGraph son){
+        this.getSons().add(son);
+        son.getFathers().add(this);
+    }
+
+    public void removeSon(StringGraph son){
+        this.getSons().remove(son);
+        son.getFathers().remove(this);
+    }
+
     public NodeType getRoot() {
         return root;
     }
@@ -74,7 +91,13 @@ public class StringGraph {
     }
 
 
-    protected void normalize(){
+    protected void normalize() {
+        for (StringGraph s : this.getSons()){
+            if (this.getFathers().contains(s))
+                return;
+            else
+                s.normalize();
+        }
 
         // RULE 1
         if (this.root == NodeType.CONCAT && this.sons.size() == 1) {
@@ -114,6 +137,15 @@ public class StringGraph {
 
                         previousSibling.get().getSons().addAll(currentSibling.get().getSons()); // Adding currentSibling sons to previous sibling sons
                         previousSibling.get().setSons(previousSibling.get().getSons());
+
+                        for (StringGraph s : currentSibling.get().getSons()) {
+                            if (currentSibling.get().getFathers().contains(s)) {
+                                s.removeSon(currentSibling.get()); // assuming just one edge pointing up
+                                s.addSon(previousSibling.get());
+                            }
+                            s.getFathers().remove(currentSibling.get());
+                            s.getFathers().add(previousSibling.get());
+                        }
                         appliedRule = true;
                     }
                     ++pos;
@@ -122,6 +154,7 @@ public class StringGraph {
                 if (appliedRule){
                     this.getSons().remove(currentSibling.get());
                 }
+
             }
         }
 
