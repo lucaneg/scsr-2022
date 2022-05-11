@@ -4,26 +4,29 @@ import it.unive.scsr.Exceptions.WrongBuildStringGraphException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class StringGraph {
 
     enum NodeType {
-        CONCAT, OR, MAX, CHARACTER, EMPTY
-    }
-    enum CHARACTER {
-        a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
+        CONCAT,
+        OR,
+        EMPTY,
+        MAX;
+        enum CHARACTER {
+            a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
+        }
     }
 
-    private NodeType root;
+
+    private NodeType label;
     private List<StringGraph> fathers;
     private List<StringGraph> sons;
     private boolean normalized = false;
 
-    public StringGraph(NodeType root, List<StringGraph> sons) {
-        this.root = root;
+    public StringGraph(NodeType label, List<StringGraph> sons) {
+        this.label = label;
         this.sons = sons;
 
         for (StringGraph son : sons) {
@@ -32,18 +35,18 @@ public class StringGraph {
         }
 
         // Checking CONCAT and OR node have at least one node
-        if ((root == NodeType.CONCAT && !(this.getSons().size() == 0)) ||
-            (root == NodeType.OR && !(this.getSons().size() == 0)))
+        if ((label == NodeType.CONCAT && !(this.getSons().size() == 0)) ||
+            (label == NodeType.OR && !(this.getSons().size() == 0)))
             throw new WrongBuildStringGraphException("OR node and CONCAT node must have at least one son.");
 
         // We make sure root has no sons
-        if (this.root == NodeType.MAX && this.sons.size() > 0)
+        if (this.label == NodeType.MAX && this.sons.size() > 0)
             throw new WrongBuildStringGraphException("MAX node cannot have son.");
     }
 
-    public StringGraph(NodeType root) {
-        assert(!(root == NodeType.CONCAT));
-        this.root = root;
+    public StringGraph(NodeType label) {
+        assert(!(label == NodeType.CONCAT));
+        this.label = label;
         this.sons = new ArrayList<>();
         this.fathers = new ArrayList<>();
     }
@@ -58,12 +61,12 @@ public class StringGraph {
         son.getFathers().remove(this);
     }
 
-    public NodeType getRoot() {
-        return root;
+    public NodeType getLabel() {
+        return label;
     }
 
-    public void setRoot(NodeType root) {
-        this.root = root;
+    public void setLabel(NodeType label) {
+        this.label = label;
     }
 
     public List<StringGraph> getSons() {
@@ -100,28 +103,28 @@ public class StringGraph {
         }
 
         // RULE 1
-        if (this.root == NodeType.CONCAT && this.sons.size() == 1) {
-            this.setRoot(this.sons.get(0).getRoot());
+        if (this.label == NodeType.CONCAT && this.sons.size() == 1) {
+            this.setLabel(this.sons.get(0).getLabel());
             this.setSons(this.sons.get(0).getSons());
         }
 
         // RULE 2
-        if (this.root == NodeType.CONCAT) {
+        if (this.label == NodeType.CONCAT) {
             AtomicBoolean applyRule = new AtomicBoolean(true);
             for(StringGraph son: this.getSons()) {
-                if (son.root != NodeType.MAX) {
+                if (son.label != NodeType.MAX) {
                     applyRule.set(false);
                 }
             }
             if (applyRule.get()) {
-                this.setRoot(NodeType.MAX);
+                this.setLabel(NodeType.MAX);
                 this.setSons(null);
             }
 
         }
 
         // RULE 3
-        if (this.root == NodeType.CONCAT) {
+        if (this.label == NodeType.CONCAT) {
             if (this.getSons().size() >= 2) {
                 AtomicReference<StringGraph> previousSibling;
                 AtomicReference<StringGraph> currentSibling;
@@ -132,7 +135,7 @@ public class StringGraph {
                     previousSibling = new AtomicReference<>(this.getSons().get(pos));
                     currentSibling = new AtomicReference<>(this.getSons().get(++pos));
 
-                    if (previousSibling.get().root == NodeType.CONCAT && currentSibling.get().root == NodeType.CONCAT &&
+                    if (previousSibling.get().label == NodeType.CONCAT && currentSibling.get().label == NodeType.CONCAT &&
                             (previousSibling.get().getFathers().size() == 1) && (currentSibling.get().getFathers().size() == 1)) {
 
                         previousSibling.get().getSons().addAll(currentSibling.get().getSons()); // Adding currentSibling sons to previous sibling sons
@@ -159,9 +162,9 @@ public class StringGraph {
         }
 
         // RULE 4
-        if (this.root == NodeType.CONCAT &&
+        if (this.label == NodeType.CONCAT &&
             this.getSons().get(0).getFathers().size() == 1 &&
-            this.getSons().get(0).getRoot() == NodeType.CONCAT) {
+            this.getSons().get(0).getLabel() == NodeType.CONCAT) {
 
             for (StringGraph s : this.getSons().get(0).getSons()) {
                 this.getSons().add(s); // adding son to first concat
@@ -172,6 +175,20 @@ public class StringGraph {
 
         // At the end we know for sure that our StringGraph is normalized
         this.setNormalized(true);
+    }
+
+    public boolean contains(NodeType.CHARACTER c) {
+        // boolean contains = false;
+
+        if (this.label == NodeType.OR) return false;
+
+        else if (this.label == NodeType.CONCAT) {
+            for (StringGraph s : this.getSons()) {
+                //if (s.getLabel() == c) return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -200,6 +217,37 @@ public class StringGraph {
 
         }
         else return false;
+    }
+
+    public StringGraph substring(int leftbound, int rightbound) {
+
+        if (this.label == NodeType.CONCAT &&
+            this.getSons().size() >= rightbound - 1) {
+
+            for(int i = 0; i < rightbound - 1; ++i) {
+                if (this.getSons().get(i).label != NodeType.CHARACTER)
+                    return StringGraph.buildMAX();
+            }
+
+            List<StringGraph> substringSons = new ArrayList<>();
+            for(int i = leftbound; i < rightbound - 1; ++i) {
+                substringSons.add(this.getSons().get(i));
+            }
+            return new StringGraph(NodeType.CONCAT, substringSons);
+        }
+        return StringGraph.buildMAX();
+    }
+
+    public static StringGraph buildCONCAT(StringGraph left, StringGraph right) {
+        return new StringGraph(NodeType.CONCAT, new ArrayList<>(List.of(left, right)));
+    }
+
+    public static StringGraph buildMAX() {
+        return new StringGraph(NodeType.MAX); // Represent TOP in the domain
+    }
+
+    public static StringGraph buildEMPTY() {
+        return new StringGraph(NodeType.EMPTY); //
     }
 
 //    private int checkIndegree(StringGraph fixedNode) {

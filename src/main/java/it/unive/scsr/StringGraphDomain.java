@@ -3,8 +3,20 @@ package it.unive.scsr;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
+import it.unive.lisa.analysis.representation.StringRepresentation;
+import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.TernaryExpression;
+import it.unive.lisa.symbolic.value.operator.StringOperator;
+import it.unive.lisa.symbolic.value.operator.binary.BinaryOperator;
+import it.unive.lisa.symbolic.value.operator.binary.StringConcat;
+import it.unive.lisa.symbolic.value.operator.binary.StringContains;
+import it.unive.lisa.symbolic.value.operator.ternary.StringSubstring;
+import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
+import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
+import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
@@ -13,6 +25,28 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
     public StringGraphDomain(StringGraph stringGraph) {
         this.stringGraph = stringGraph;
+    }
+
+
+    @Override
+    protected StringGraphDomain evalTernaryExpression(TernaryOperator operator, StringGraphDomain left, StringGraphDomain middle, StringGraphDomain right, ProgramPoint pp) throws SemanticException {
+        if (operator instanceof StringSubstring){
+            // return left.stringGraph.substring(middle, right);
+        }
+        return new StringGraphDomain(StringGraph.buildMAX());
+    }
+
+    @Override
+    protected StringGraphDomain evalBinaryExpression(BinaryOperator operator, StringGraphDomain left,
+                                                         StringGraphDomain right,
+                                                         ProgramPoint pp) {
+
+        if (operator instanceof StringConcat) {
+            StringGraph.buildCONCAT(left.stringGraph, right.stringGraph).normalize();
+        } else if (operator instanceof StringContains) {
+
+        }
+        return new StringGraphDomain(StringGraph.buildMAX());
     }
 
     @Override
@@ -44,16 +78,16 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
     @Override
     public DomainRepresentation representation() {
-        return null;
+        return new StringRepresentation(stringGraph);
     }
 
     @Override
     public StringGraphDomain top() {
-        return null;
+        return new StringGraphDomain(StringGraph.buildMAX());
     }
 
     @Override
     public StringGraphDomain bottom() {
-        return null;
+        return new StringGraphDomain(StringGraph.buildEMPTY());
     }
 }
