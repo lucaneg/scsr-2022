@@ -1,5 +1,7 @@
 package it.unive.scsr;
 
+import org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter.Red;
+
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.numeric.Parity;
@@ -25,7 +27,6 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 
     @Override
     public DomainRepresentation representation() {
-
         // Build a representation which contains left (ExtSign domain) and right (Parity domain)
         return new PairRepresentation(left.representation(), right.representation());
     }
@@ -56,8 +57,8 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 
     @Override
     protected ReducedProduct lubAux(ReducedProduct other) throws SemanticException {
-        // TODO Auto-generated method stub
-        return null;
+        // Create new element in the domain where each element of the pair is a comparison between this and other element of the domain
+        return new ReducedProduct(this.left.lub(other.left), this.right.lub(other.right));
     }
 
     @Override
@@ -74,14 +75,49 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 
     @Override
     public boolean equals(Object obj) {
-        // TODO Auto-generated method stub
-        return false;
+
+        // Same object
+        if (this == obj)
+            return true;
+        
+        // Object is null or this and obj belong to different classes
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        // In this case, assume obj is an element of reduced product domain
+        ReducedProduct other = (ReducedProduct) obj;
+
+        // Check if left field of this and other are not equal
+        if (this.left == null && other.left != null) {
+            return false;
+        } else if (!this.left.equals(other.left)) {
+            return false;
+        }
+
+        // Check if right field of this and other are not equal
+        if (this.right == null && other.right != null) {
+            return false;
+        } else if(!this.right.equals(other.right)) {
+            return false;
+        }
+        
+        // this and obj are equals
+        return true;
     }
 
     @Override
     public int hashCode() {
-        // TODO Auto-generated method stub
-        return 0;
+
+        final int prime = 31;
+        int res = 1;
+
+        // Calculate result using hash code of left (ExtSign domain)
+        res = prime * res + ((this.left == null) ? 0 : this.left.hashCode());
+
+        // Calculate result using hash code of right (Parity domain)
+        res = prime * res + ((this.right == null) ? 0 : this.right.hashCode());
+
+        return res;
     }
 
 }
