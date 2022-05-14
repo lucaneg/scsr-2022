@@ -1,6 +1,5 @@
 package it.unive.scsr;
 
-import org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter.Red;
 
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
@@ -69,8 +68,8 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 
     @Override
     protected boolean lessOrEqualAux(ReducedProduct other) throws SemanticException {
-        // TODO Auto-generated method stub
-        return false;
+        // Returns true if and only if this lattice element <= than given one.
+        return this.left.lessOrEqual(other.left) && this.right.lessOrEqual(other.right);
     }
 
     @Override
