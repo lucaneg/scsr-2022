@@ -2,22 +2,14 @@ package it.unive.scsr.ReducedProduct;
 
 import java.util.Objects;
 
-import org.apache.commons.lang3.tuple.Pair;
 
 import it.unive.lisa.analysis.Lattice;
-import it.unive.lisa.analysis.SemanticDomain;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
-import it.unive.lisa.analysis.nonrelational.value.NonRelationalValueDomain;
-import it.unive.lisa.analysis.numeric.Interval;
-import it.unive.lisa.analysis.numeric.Parity;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.PairRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
-import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.symbolic.SymbolicExpression;
-import it.unive.lisa.symbolic.value.BinaryExpression;
 import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
@@ -43,11 +35,11 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
     public IntInterval interval;
     public Integer parity;
 
+    private static final Integer TOP = 1;
+    private static final Integer BOTTOM = 2;
+    private static final Integer ODD = 3;
     private static final Integer EVEN = 4;
-	private static final Integer ODD = 3;
-	private static final Integer TOP = 1;
-	private static final Integer BOTTOM = 2;
-
+	
     private static final IntInterval INT_TOP = new IntInterval(MathNumber.MINUS_INFINITY, MathNumber.PLUS_INFINITY);
     private static final IntInterval INT_BOTTOM = null;
     private static final IntInterval INT_ZERO = new IntInterval(0, 0);
@@ -58,7 +50,6 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
     }
     
     public IntervalParity(IntInterval interval, Integer parity) {
-        System.out.println("init");
         this.interval = interval;
         this.parity = parity;
     }
@@ -131,7 +122,7 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
     @Override
     protected boolean lessOrEqualAux(IntervalParity other) throws SemanticException {
         //return false;
-        return lessOrEqualAuxInterval(interval) && lessOrEqualAuxParity(other.parity);
+        return lessOrEqualAuxInterval(other.interval) && lessOrEqualAuxParity(other.parity);
     }
 
     @Override
@@ -149,7 +140,8 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 	@Override
 	protected IntervalParity evalBinaryExpression(BinaryOperator operator, IntervalParity left, IntervalParity right, ProgramPoint pp) {
 		//return new IntervalParity(INT_TOP, TOP);
-        return new IntervalParity(evalBinaryExpressionInterval(operator, left.interval, right.interval, pp), evalBinaryExpressionParity(operator, left.parity, right.parity, pp));
+        return new IntervalParity(evalBinaryExpressionInterval(operator, left.interval, right.interval, pp),
+            evalBinaryExpressionParity(operator, left.parity, right.parity, pp));
 	}
 
     // Interval
@@ -175,8 +167,8 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 			return INT_TOP;
 	}
 
-	private boolean is_interval(IntInterval i, int n) {
-		return !isBottom() && interval.isSingleton() && interval.getLow().is(n);
+	private boolean interval_is(IntInterval i, int n) {
+		return interval != INT_BOTTOM && interval.isSingleton() && interval.getLow().is(n);
 	}
 
 	protected IntInterval evalBinaryExpressionInterval(BinaryOperator operator, IntInterval left, IntInterval right, ProgramPoint pp) {
@@ -191,14 +183,14 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 		else if (operator instanceof SubtractionOperator)
 			return left.diff(right);
 		else if (operator instanceof Multiplication)
-			if (is_interval(left, 0) || is_interval(right, 0))
+			if (interval_is(left, 0) || interval_is(right, 0))
 				return INT_ZERO;
 			else
 				return left.mul(right);
 		else if (operator instanceof DivisionOperator)
-			if (is_interval(right, 0))
+			if (interval_is(right, 0))
 				return INT_BOTTOM;
-			else if (is_interval(left, 0))
+			else if (interval_is(left, 0))
 				return INT_ZERO;
 			else if (left == INT_TOP || right == INT_TOP)
 				return INT_TOP;
@@ -254,14 +246,6 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 		}
 
 		return TOP;
-	}
-
-	private boolean isEven() {
-		return parity == EVEN;
-	}
-
-	private boolean isOdd() {
-		return parity == ODD;
 	}
 
 	protected Integer evalUnaryExpressionParity(UnaryOperator operator, Integer arg, ProgramPoint pp) {

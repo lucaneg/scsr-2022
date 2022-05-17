@@ -13,9 +13,13 @@ class tutorial {
 		def j = -10;
 		def x = 2 + 3;
 		def a = i + j;
+		a = i + x;
 		def s = i - j;
+		s = j - x;
 		def m = i * j;
+		m = x * 0;
 		def d = i / j;
+		d = m / m;
 	}
 	
 	branches(a, b) {
