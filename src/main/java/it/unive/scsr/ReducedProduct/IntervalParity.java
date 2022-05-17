@@ -104,19 +104,19 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
     @Override
     protected IntervalParity lubAux(IntervalParity other) throws SemanticException {
         //return new IntervalParity(INT_TOP, TOP);
-        return new IntervalParity(lubAuxInterval(other.interval), lubAuxParity(other.parity));
+        return reduceProduct(new IntervalParity(lubAuxInterval(other.interval), lubAuxParity(other.parity)));
     }
 
     @Override
 	protected IntervalParity glbAux(IntervalParity other) {
         //return new IntervalParity(INT_TOP, TOP);
-		return new IntervalParity(glbAuxInterval(other.interval), BOTTOM);
+		return reduceProduct(new IntervalParity(glbAuxInterval(other.interval), BOTTOM));
 	}
 
     @Override
     protected IntervalParity wideningAux(IntervalParity other) throws SemanticException {
         //return new IntervalParity(INT_TOP, TOP);
-        return new IntervalParity(wideningAuxInterval(other.interval), wideningAuxParity(other.parity));
+        return reduceProduct(new IntervalParity(wideningAuxInterval(other.interval), wideningAuxParity(other.parity)));
     }
 
     @Override
@@ -128,21 +128,61 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
     @Override
 	protected IntervalParity evalNonNullConstant(Constant constant, ProgramPoint pp) {
         //return new IntervalParity(INT_TOP, TOP);
-        return new IntervalParity(evalNonNullConstantInterval(constant, pp), evalNonNullConstantParity(constant, pp));
+        return reduceProduct(new IntervalParity(evalNonNullConstantInterval(constant, pp), evalNonNullConstantParity(constant, pp)));
 	}
 
 	@Override
 	protected IntervalParity evalUnaryExpression(UnaryOperator operator, IntervalParity arg, ProgramPoint pp) {
         //return new IntervalParity(INT_TOP, TOP);
-        return new IntervalParity(evalUnaryExpressionInterval(operator, arg.interval, pp), evalUnaryExpressionParity(operator, arg.parity, pp));
+        return reduceProduct(new IntervalParity(evalUnaryExpressionInterval(operator, arg.interval, pp), evalUnaryExpressionParity(operator, arg.parity, pp)));
 	}
 
 	@Override
 	protected IntervalParity evalBinaryExpression(BinaryOperator operator, IntervalParity left, IntervalParity right, ProgramPoint pp) {
 		//return new IntervalParity(INT_TOP, TOP);
-        return new IntervalParity(evalBinaryExpressionInterval(operator, left.interval, right.interval, pp),
-            evalBinaryExpressionParity(operator, left.parity, right.parity, pp));
+        return reduceProduct(new IntervalParity(evalBinaryExpressionInterval(operator, left.interval, right.interval, pp),
+            evalBinaryExpressionParity(operator, left.parity, right.parity, pp)));
 	}
+
+    private IntervalParity reduceProduct(IntervalParity ip){
+        if (ip.interval == INT_BOTTOM) {
+            return ip;
+        }
+        MathNumber newLow = ip.interval.getLow().roundDown();
+        MathNumber newHigh = ip.interval.getHigh().roundUp();
+        if (ip.parity == ODD) {
+            if (!isOdd(newLow)) {
+                newLow = newLow.add(new MathNumber(1));
+            }
+            if (!isOdd(newHigh)) {
+                newHigh = newHigh.subtract(new MathNumber(1));
+            }
+        }
+        else if (ip.parity == EVEN) {
+            if (isOdd(newLow)) {
+                newLow = newLow.add(new MathNumber(1));
+            }
+            if (isOdd(newHigh)) {
+                newHigh = newHigh.subtract(new MathNumber(1));
+            }
+        }
+        if (newHigh.compareTo(newLow) == -1){
+            return new IntervalParity(INT_BOTTOM, ip.parity); 
+        }
+        else {
+            return new IntervalParity(new IntInterval(newLow, newHigh), ip.parity);
+        }
+    }
+
+    private boolean isOdd(MathNumber n){
+        if (n.subtract(new MathNumber(1)).divide(new MathNumber(2)).roundDown().equals(
+            n.divide(new MathNumber(2)).roundDown())) {
+                return true;
+            }
+        else {
+            return false;
+        }
+    }
 
     // Interval
 
@@ -269,16 +309,22 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 			else
 				return ODD;
 		else if (operator instanceof DivisionOperator)
-			if (left == ODD)
-				return right == ODD ? ODD : EVEN;
-			else
-				return right == ODD ? EVEN : TOP;
+			return TOP;
 
 		return TOP;
 	}
 
 	protected Integer lubAuxParity(Integer other) throws SemanticException {
-		return TOP;
+		if (parity == other){
+            return parity;
+        }
+        else if (parity == BOTTOM) {
+            return other;
+        }
+        else if (other == BOTTOM) {
+            return parity;
+        }
+        return TOP;
 	}
 
 	protected Integer wideningAuxParity(Integer other) throws SemanticException {
@@ -286,7 +332,16 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 	}
 
 	protected boolean lessOrEqualAuxParity(Integer other) throws SemanticException {
-		return false;
+		if (parity == other){
+            return true;
+        }
+        else if (parity == BOTTOM || other == TOP) {
+            return true;
+        }
+        else if (parity == TOP || other == BOTTOM) {
+            return false;
+        }
+        return false;
 	}
 
     // END

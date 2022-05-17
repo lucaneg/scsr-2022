@@ -23,12 +23,17 @@ class tutorial {
 	}
 	
 	branches(a, b) {
-		def x = 0;
+		def x = 2;
 		if (a > b) 
-           	x = x * 7;
+           	x = x + 2;
        	else
-           	x = -7;
-		def y = x / x;
+           	x = x + 4;
+		def z = x / 2;
+		x = x + 1;
+		def y = x / 2;
+		y = x * 2;
+		def c = 5 / 2;
+		def d = 7 / 2;
     }
 
 	branches_v2(a, b) {
