@@ -150,7 +150,15 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
         }
         MathNumber newLow = ip.interval.getLow().roundDown();
         MathNumber newHigh = ip.interval.getHigh().roundUp();
-        if (ip.parity == ODD) {
+        if (ip.interval.isSingleton()){
+            if (isOdd(newLow)) {
+                return new IntervalParity(ip.interval, ODD);
+            }
+            else {
+                return new IntervalParity(ip.interval, EVEN);
+            }
+        }
+        else if (ip.parity == ODD) {
             if (!isOdd(newLow)) {
                 newLow = newLow.add(new MathNumber(1));
             }
@@ -295,17 +303,18 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 	}
 
 	protected Integer evalBinaryExpressionParity(BinaryOperator operator, Integer left, Integer right, ProgramPoint pp) {
-		if (left == TOP || right == TOP)
-			return TOP;
-
 		if (operator instanceof AdditionOperator || operator instanceof SubtractionOperator)
-			if (right == left)
+            if (left == TOP || right == TOP)
+                return TOP;
+			else if (right == left)
 				return EVEN;
 			else
 				return ODD;
 		else if (operator instanceof Multiplication)
 			if (left == EVEN || right == EVEN)
 				return EVEN;
+            else if (left == TOP || right == TOP)
+                return TOP;
 			else
 				return ODD;
 		else if (operator instanceof DivisionOperator)
