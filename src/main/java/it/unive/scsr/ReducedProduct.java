@@ -4,10 +4,17 @@ import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
 import it.unive.lisa.analysis.numeric.Parity;
+import it.unive.lisa.analysis.numeric.Sign;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.PairRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.program.cfg.statement.BinaryExpression;
+import it.unive.lisa.symbolic.value.Constant;
+import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
+import it.unive.lisa.symbolic.value.operator.binary.BinaryOperator;
+import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
+import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
 
 public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct> {
     
@@ -64,8 +71,8 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 
     @Override
     protected ReducedProduct wideningAux(ReducedProduct other) throws SemanticException {
-        // TODO Auto-generated method stub
-        return null;
+        // TODO: Implement
+        return lubAux(other);
     }
 
     @Override
@@ -124,14 +131,37 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
     @Override
     public ReducedProduct eval(ValueExpression expression, ValueEnvironment<ReducedProduct> environment,
             ProgramPoint pp) throws SemanticException {
-        // TODO Auto-generated method stub
-        
-        //System.out.println("eval");
 
-        ValueEnvironment<Parity> vp = new ValueEnvironment<Parity>(environment.lattice.parity);
-        ValueEnvironment<ExtSignDomainSolution> vs = new ValueEnvironment<ExtSignDomainSolution>(environment.lattice.sign);
-        Parity p = this.parity.eval(expression, vp, pp);
-        ExtSignDomainSolution s = this.sign.eval(expression, vs, pp);
-        return new ReducedProduct(s, p);
+        ReducedProduct evalResult = super.eval(expression, environment, pp);
+
+        //TODO: Apply reductions
+
+        return evalResult;
+    }
+    
+    @Override
+    protected ReducedProduct evalBinaryExpression(BinaryOperator operator, ReducedProduct left, ReducedProduct right,
+            ProgramPoint pp) throws SemanticException {
+        // TODO Auto-generated method stub
+        System.out.println("[ReducedProduct]: evalBinaryExpression");
+        return new ReducedProduct(this.sign.evalBinaryExpression(operator, left.sign, right.sign, pp), this.parity.bottom());
+    }
+
+    @Override
+    protected ReducedProduct evalUnaryExpression(UnaryOperator operator, ReducedProduct arg, ProgramPoint pp)
+            throws SemanticException {
+        // TODO Auto-generated method stub
+        System.out.println("[ReducedProduct]: evalUnaryExpression");
+        return new ReducedProduct(this.sign.evalUnaryExpression(operator, arg.sign, pp), this.parity.bottom());
+    }
+
+    @Override
+    protected ReducedProduct evalNonNullConstant(Constant constant, ProgramPoint pp) throws SemanticException {
+        // TODO Auto-generated method stub
+		if (constant.getValue() instanceof Integer) {
+            System.out.println("[ReducedProduct]: evalNonNullConstant");
+            return new ReducedProduct(this.sign.evalNonNullConstant(constant, pp), this.parity.bottom());
+		}
+		return top();
     }
 }
