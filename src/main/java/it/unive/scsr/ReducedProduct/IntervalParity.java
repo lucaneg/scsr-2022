@@ -40,9 +40,9 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
     private static final Integer ODD = 3;
     private static final Integer EVEN = 4;
 	
-    private static final IntInterval INT_TOP = new IntInterval(MathNumber.MINUS_INFINITY, MathNumber.PLUS_INFINITY);
+    private static final IntInterval INT_TOP = IntInterval.INFINITY;
     private static final IntInterval INT_BOTTOM = null;
-    private static final IntInterval INT_ZERO = new IntInterval(0, 0);
+    private static final IntInterval INT_ZERO = IntInterval.ZERO;
 
     public IntervalParity() {
         // top and top
@@ -108,9 +108,9 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
     }
 
     @Override
-	protected IntervalParity glbAux(IntervalParity other) {
+	protected IntervalParity glbAux(IntervalParity other) throws SemanticException {
         //return new IntervalParity(INT_TOP, TOP);
-		return reduceProduct(new IntervalParity(glbAuxInterval(other.interval), BOTTOM));
+		return reduceProduct(new IntervalParity(glbAuxInterval(other.interval), glbAuxParity(other.parity)));
 	}
 
     @Override
@@ -172,6 +172,16 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
             }
             if (isOdd(newHigh)) {
                 newHigh = newHigh.subtract(new MathNumber(1));
+            }
+        }
+        else if (ip.parity == BOTTOM) {
+            if (isOdd(newLow) && isOdd(newHigh)) {
+                return new IntervalParity(ip.interval, ODD); 
+            }
+            else if (!isOdd(newLow) && !isOdd(newHigh)) {
+                return new IntervalParity(ip.interval, EVEN); 
+            } else {
+                return new IntervalParity(ip.interval, TOP); 
             }
         }
         if (newHigh.compareTo(newLow) == -1){
@@ -248,12 +258,26 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 	}
 
 	protected IntInterval lubAuxInterval(IntInterval other) throws SemanticException {
+        /*if (other == null) {
+            MathNumber newLow = interval.getLow();
+            MathNumber newHigh = interval.getHigh();
+            return newLow.isMinusInfinity() && newHigh.isPlusInfinity() ? INT_TOP : new IntInterval(newLow, newHigh);
+        } else if (interval == null) {
+            MathNumber newLow = other.getLow();
+            MathNumber newHigh = other.getHigh();
+            return newLow.isMinusInfinity() && newHigh.isPlusInfinity() ? INT_TOP : new IntInterval(newLow, newHigh);
+        }*/
 		MathNumber newLow = interval.getLow().min(other.getLow());
 		MathNumber newHigh = interval.getHigh().max(other.getHigh());
 		return newLow.isMinusInfinity() && newHigh.isPlusInfinity() ? INT_TOP : new IntInterval(newLow, newHigh);
 	}
 
 	protected IntInterval glbAuxInterval(IntInterval other) {
+        /*if (other == null) {
+            return interval;
+        } else if (interval == null) {
+            return other;
+        }*/
 		MathNumber newLow = interval.getLow().max(other.getLow());
 		MathNumber newHigh = interval.getHigh().min(other.getHigh());
 
@@ -264,13 +288,22 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 
 	protected IntInterval wideningAuxInterval(IntInterval other) throws SemanticException {
 		MathNumber newLow, newHigh;
+        /*if (other == null) {
+            newHigh = interval.getHigh();
+            newLow = interval.getLow();
+            return newLow.isMinusInfinity() && newHigh.isPlusInfinity() ? INT_TOP : new IntInterval(newLow, newHigh);
+        } else if (interval == null) {
+            newHigh = MathNumber.PLUS_INFINITY;
+            newLow = MathNumber.MINUS_INFINITY;
+            return newLow.isMinusInfinity() && newHigh.isPlusInfinity() ? INT_TOP : new IntInterval(newLow, newHigh);
+        }*/
 		if (other.getHigh().compareTo(interval.getHigh()) > 0)
-			newHigh = MathNumber.PLUS_INFINITY;
+			newHigh = other.getHigh();
 		else
 			newHigh = interval.getHigh();
 
 		if (other.getLow().compareTo(interval.getLow()) < 0)
-			newLow = MathNumber.MINUS_INFINITY;
+			newLow = other.getLow();
 		else
 			newLow = interval.getLow();
 
@@ -278,6 +311,9 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 	}
 
 	protected boolean lessOrEqualAuxInterval(IntInterval other) throws SemanticException {
+        /*if (interval == null || other == null) {
+            return true;
+        }*/
 		return other.includes(interval);
 	}
 
@@ -306,6 +342,10 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 		if (operator instanceof AdditionOperator || operator instanceof SubtractionOperator)
             if (left == TOP || right == TOP)
                 return TOP;
+            else if (left == BOTTOM)
+                return right;
+            else if (right == BOTTOM)
+                return left;
 			else if (right == left)
 				return EVEN;
 			else
@@ -315,6 +355,8 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
 				return EVEN;
             else if (left == TOP || right == TOP)
                 return TOP;
+            else if (left == BOTTOM && right == BOTTOM)
+                return BOTTOM;
 			else
 				return ODD;
 		else if (operator instanceof DivisionOperator)
@@ -334,6 +376,20 @@ public class IntervalParity extends BaseNonRelationalValueDomain<IntervalParity>
             return parity;
         }
         return TOP;
+	}
+
+    protected Integer glbAuxParity(Integer other) throws SemanticException {
+		/*if (parity == other){
+            return parity;
+        }
+        else if (parity == TOP) {
+            return other;
+        }
+        else if (other == TOP) {
+            //a.toString();
+            return parity;
+        }*/
+        return BOTTOM;
 	}
 
 	protected Integer wideningAuxParity(Integer other) throws SemanticException {

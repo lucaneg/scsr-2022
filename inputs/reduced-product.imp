@@ -7,6 +7,38 @@ class tutorial {
         	b = b + c;
    		return b;
     }
+
+	loop_v2() {
+		def c = 1;
+		def b = 0;
+   		while (b < 10) 
+        	b = b + 0;
+   		return b;
+    }
+
+	loop_even() {
+		def c = 2;
+		def b = 0;
+   		while (b < 9) 
+        	b = b + c;
+   		return b;
+    }
+
+	loop_even_v2() {
+		def c = 4;
+		def b = 0;
+   		while (b < 9) 
+        	b = b + c;
+   		return b;
+    }
+
+	loop_odd() {
+		def c = 1;
+		def b = 0;
+   		while (b < 9) 
+        	b = b + c;
+   		return b;
+    }
     
 	even_even() {
 		def i = 2;
@@ -39,6 +71,8 @@ class tutorial {
 		z = z * 2;
 		x = x + 3;
 		x = x * 4;
+		x = x / 4;
+		x = x + 2;
     }
 
 	branches_odd(a, b) {
