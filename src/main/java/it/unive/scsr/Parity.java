@@ -116,7 +116,7 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 			if (left.isOdd())
 				return right.isOdd() ? ODD : EVEN;
 			else
-				return right.isOdd() ? EVEN : TOP;
+				return right.isEven() ? EVEN : TOP;
 		else if (operator instanceof Module)
 			return TOP;
 

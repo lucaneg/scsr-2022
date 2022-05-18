@@ -66,8 +66,7 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 
     @Override
     protected ReducedProduct wideningAux(ReducedProduct other) throws SemanticException {
-        // TODO: Implement
-        return lubAux(other);
+        return new ReducedProduct(this.sign.wideningAux(other.sign), this.parity.wideningAux(other.parity));
     }
 
     @Override
