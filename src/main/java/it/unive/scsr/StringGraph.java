@@ -1,9 +1,11 @@
 package it.unive.scsr;
 
+import it.unive.scsr.Exceptions.InvalidCharacterException;
 import it.unive.scsr.Exceptions.WrongBuildStringGraphException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -13,21 +15,25 @@ public class StringGraph {
         CONCAT,
         OR,
         EMPTY,
-        MAX;
-        enum CHARACTER {
-            a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
-        }
+        MAX,
+        SIMPLE
     }
 
+    enum CHARACTER {
+        a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, Ɛ
+    }
 
     private NodeType label;
     private List<StringGraph> fathers;
     private List<StringGraph> sons;
     private boolean normalized = false;
+    private CHARACTER character;
+    private Integer bound; // NEEDED FOR evalTernaryExpression() METHOD
 
-    public StringGraph(NodeType label, List<StringGraph> sons) {
+    public StringGraph(NodeType label, List<StringGraph> sons, CHARACTER character) {
         this.label = label;
         this.sons = sons;
+        this.character = character;
 
         for (StringGraph son : sons) {
             son.getFathers().add(this);
@@ -42,13 +48,71 @@ public class StringGraph {
         // We make sure root has no sons
         if (this.label == NodeType.MAX && this.sons.size() > 0)
             throw new WrongBuildStringGraphException("MAX node cannot have son.");
+
+        if (this.label == NodeType.SIMPLE && Objects.isNull(this.character)) {
+            throw new WrongBuildStringGraphException("SIMPLE node must have a character associated.");
+        }
+
+        if (this.label != NodeType.SIMPLE && !Objects.isNull(this.character)) {
+            throw new WrongBuildStringGraphException("Only SIMPLE can have a character associated.");
+        }
+
     }
+
+    private static CHARACTER map(char c) {
+        return switch (c) {
+            case 'a' -> CHARACTER.a;
+            case 'b' -> CHARACTER.b;
+            case 'c' -> CHARACTER.c;
+            case 'd' -> CHARACTER.d;
+            case 'e' -> CHARACTER.e;
+            case 'f' -> CHARACTER.f;
+            case 'g' -> CHARACTER.g;
+            case 'h' -> CHARACTER.h;
+            case 'i' -> CHARACTER.i;
+            case 'j' -> CHARACTER.j;
+            case 'k' -> CHARACTER.k;
+            case 'l' -> CHARACTER.l;
+            case 'm' -> CHARACTER.m;
+            case 'n' -> CHARACTER.n;
+            case 'o' -> CHARACTER.o;
+            case 'p' -> CHARACTER.p;
+            case 'q' -> CHARACTER.q;
+            case 'r' -> CHARACTER.r;
+            case 's' -> CHARACTER.s;
+            case 't' -> CHARACTER.t;
+            case 'u' -> CHARACTER.u;
+            case 'v' -> CHARACTER.v;
+            case 'w' -> CHARACTER.w;
+            case 'x' -> CHARACTER.x;
+            case 'y' -> CHARACTER.y;
+            case 'z' -> CHARACTER.z;
+            case 'Ɛ' -> CHARACTER.Ɛ;
+            default -> throw new InvalidCharacterException(c);
+        };
+    }
+
+    public StringGraph(String stringToRepresent) {
+        this.label = NodeType.CONCAT;
+        this.fathers = new ArrayList<>();
+        this.sons = new ArrayList<>();
+        for (int i = 0; i < stringToRepresent.length(); i++){
+            StringGraph son = new StringGraph(NodeType.SIMPLE, new ArrayList<>(), StringGraph.map(stringToRepresent.charAt(i)));
+            this.addSon(son);
+        }
+        this.normalized = true;
+    }
+
 
     public StringGraph(NodeType label) {
         assert(!(label == NodeType.CONCAT));
         this.label = label;
         this.sons = new ArrayList<>();
         this.fathers = new ArrayList<>();
+    }
+
+    public StringGraph(int bound) {
+        this.bound = bound;
     }
 
     public void addSon(StringGraph son){
@@ -91,6 +155,22 @@ public class StringGraph {
 
     public boolean isNormalized() {
         return normalized;
+    }
+
+    public CHARACTER getCharacter() {
+        return character;
+    }
+
+    public void setCharacter(CHARACTER character) {
+        this.character = character;
+    }
+
+    public Integer getBound() {
+        return bound;
+    }
+
+    public void setBound(Integer bound) {
+        this.bound = bound;
     }
 
 
@@ -177,14 +257,16 @@ public class StringGraph {
         this.setNormalized(true);
     }
 
-    public boolean contains(NodeType.CHARACTER c) {
-        // boolean contains = false;
-
-        if (this.label == NodeType.OR) return false;
-
+    public boolean contains(CHARACTER c) {
+        boolean result = false;
+        if (this.label == NodeType.SIMPLE) return this.character == c;
+        else if (this.label == NodeType.MAX) return true;
+        else if (this.label == NodeType.EMPTY) return false;
+        else if (this.label == NodeType.OR) return false;
         else if (this.label == NodeType.CONCAT) {
+
             for (StringGraph s : this.getSons()) {
-                //if (s.getLabel() == c) return true;
+                result = result || s.contains(c);
             }
         }
 
@@ -225,7 +307,7 @@ public class StringGraph {
             this.getSons().size() >= rightbound - 1) {
 
             for(int i = 0; i < rightbound - 1; ++i) {
-                if (this.getSons().get(i).label != NodeType.CHARACTER)
+                if (this.getSons().get(i).label != NodeType.SIMPLE)
                     return StringGraph.buildMAX();
             }
 
@@ -233,13 +315,13 @@ public class StringGraph {
             for(int i = leftbound; i < rightbound - 1; ++i) {
                 substringSons.add(this.getSons().get(i));
             }
-            return new StringGraph(NodeType.CONCAT, substringSons);
+            return new StringGraph(NodeType.CONCAT, substringSons, null);
         }
         return StringGraph.buildMAX();
     }
 
     public static StringGraph buildCONCAT(StringGraph left, StringGraph right) {
-        return new StringGraph(NodeType.CONCAT, new ArrayList<>(List.of(left, right)));
+        return new StringGraph(NodeType.CONCAT, new ArrayList<>(List.of(left, right)), null);
     }
 
     public static StringGraph buildMAX() {
