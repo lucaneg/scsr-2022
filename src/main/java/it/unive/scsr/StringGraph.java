@@ -268,9 +268,9 @@ public class StringGraph {
             for (StringGraph s : this.getSons()) {
                 result = result || s.contains(c);
             }
-        }
 
-        return false;
+        }
+        return result;
     }
 
     @Override
