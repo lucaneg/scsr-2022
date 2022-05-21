@@ -128,11 +128,15 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 
         ReducedProduct evalResult = super.eval(expression, environment, pp);
 
-        //TODO: Apply reductions
+        // Only possible refinements:
+        if(evalResult.parity.isBottom() || evalResult.sign.isBottom()){
+            return new ReducedProduct(this.sign.bottom(), this.parity.bottom());
+        }
 
-        return evalResult;
-    }
-    
+        return this.glb(evalResult);
+    } 
+
+
     @Override
     protected ReducedProduct evalBinaryExpression(BinaryOperator operator, ReducedProduct left, ReducedProduct right,
             ProgramPoint pp) throws SemanticException {
@@ -161,4 +165,6 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 		}
 		return top();
     }
+
+    
 }

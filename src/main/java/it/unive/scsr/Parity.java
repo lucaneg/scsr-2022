@@ -113,10 +113,12 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 			else
 				return ODD;
 		else if (operator instanceof DivisionOperator)
-			if (left.isOdd())
-				return right.isOdd() ? ODD : EVEN;
-			else
-				return right.isEven() ? EVEN : TOP;
+		{
+			/*NB: Since parity only applies to integers, if the quotient is not an integer we cannot say anything about its parity.
+			* In the other hand, if the quotient is an integer value then it will be even iff the dividend has more factor of two than the divisor.
+			*/
+			return TOP;
+		}
 		else if (operator instanceof Module)
 			return TOP;
 
