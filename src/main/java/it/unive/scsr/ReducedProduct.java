@@ -137,8 +137,8 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
         if(evalResult.parity.isBottom() || evalResult.sign.isBottom()){
             return bottom();
         }
-
-        return this.glb(evalResult);
+        
+        return evalResult;
     } 
 
 
