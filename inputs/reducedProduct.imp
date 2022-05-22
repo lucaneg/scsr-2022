@@ -1,13 +1,5 @@
 class tutorial {
 
-	loop() {
-		def c = 1;
-		def b = 0;
-   		while (b < 10) 
-        	b = b + c;
-   		return b;
-    }
-    
 	basic() {
 		def i = 12;
 		def j = -5;
@@ -16,7 +8,7 @@ class tutorial {
 		def m = i * j;
 		def d = i / j;
 	}
-	
+
 	branches(a, b) {
 		def x = 0;
 		if (a > b) 
@@ -25,4 +17,38 @@ class tutorial {
            	x = -7;
 		def y = x / x;
     }
+
+	loop() {
+		def c = 1;
+		def b = 0;
+   		while (b < 10) {
+		   	if (b % 2 == 0)
+		   		c = c * 2;
+			else
+				c = c * 3;
+			b = b + 1;
+		}
+   		return c;
+    }
+
+	array() {
+		def n = 10;
+		def i = 0;
+		def arr = new int[n];
+
+		while(i < n) {
+			if (i % 2 == 0) 
+				arr[i] = 0;
+			else
+				arr[i] = -1;
+			i = i + 1;
+		}
+
+		def a = arr[0];
+		def b = arr[9];
+		def x = arr[0] - arr[9];
+		return;
+	}
+
+
 }

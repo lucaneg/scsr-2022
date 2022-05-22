@@ -65,6 +65,11 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
     }
 
     @Override
+    protected ReducedProduct glbAux(ReducedProduct other) throws SemanticException {
+        return new ReducedProduct(this.sign.glb(other.sign), this.parity.glb(other.parity));
+    }
+
+    @Override
     protected ReducedProduct wideningAux(ReducedProduct other) throws SemanticException {
         return new ReducedProduct(this.sign.wideningAux(other.sign), this.parity.wideningAux(other.parity));
     }
@@ -130,7 +135,7 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 
         // Only possible refinements:
         if(evalResult.parity.isBottom() || evalResult.sign.isBottom()){
-            return new ReducedProduct(this.sign.bottom(), this.parity.bottom());
+            return bottom();
         }
 
         return this.glb(evalResult);
@@ -165,6 +170,5 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 		}
 		return top();
     }
-
     
 }
