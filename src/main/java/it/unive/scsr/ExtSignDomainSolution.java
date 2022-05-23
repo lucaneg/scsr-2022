@@ -23,11 +23,11 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 		this(Sign.TOP);
 	}
 
-	private ExtSignDomainSolution(Sign sign) {
+	public ExtSignDomainSolution(Sign sign) {
 		this.sign = sign;
 	}
 
-	enum Sign {
+	public enum Sign {
 
 		BOTTOM {
 
@@ -454,6 +454,10 @@ public class ExtSignDomainSolution extends BaseNonRelationalValueDomain<ExtSignD
 
 		@Override
 		public abstract String toString();
+	}
+
+	public Sign getSign(){
+		return this.sign;
 	}
 
 	@Override

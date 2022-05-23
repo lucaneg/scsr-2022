@@ -1,5 +1,7 @@
 package it.unive.scsr;
 
+import org.antlr.v4.parse.ANTLRParser.delegateGrammar_return;
+
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
@@ -10,6 +12,7 @@ import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.ValueExpression;
 import it.unive.lisa.symbolic.value.operator.binary.BinaryOperator;
 import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
+import it.unive.scsr.ExtSignDomain.Sign;
 
 public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct> {
     
@@ -132,14 +135,45 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
             ProgramPoint pp) throws SemanticException {
 
         ReducedProduct evalResult = super.eval(expression, environment, pp);
+      
+        evalResult.sign = refineSign(evalResult);
+        evalResult.parity = refineParity(evalResult);
 
-        // Only possible refinements:
-        if(evalResult.parity.isBottom() || evalResult.sign.isBottom()){
-            return bottom();
+        return evalResult;
+    }
+    
+    public ExtSignDomainSolution refineSign(ReducedProduct rp){
+        
+        if(rp.parity.isBottom()){
+            return rp.sign.bottom();
+        }
+
+        switch(rp.sign.getSign()){
+            case POS_OR_ZERO:
+                if(rp.parity.isOdd()){
+                    return new ExtSignDomainSolution(ExtSignDomainSolution.Sign.POS);
+                }
+                break;
+            case NEG_OR_ZERO:
+                if(rp.parity.isOdd()){
+                    return new ExtSignDomainSolution(ExtSignDomainSolution.Sign.NEG);
+                }
+                break;
+            default: // No more refinements are possible
+                return rp.sign;
         }
         
-        return evalResult;
-    } 
+        return rp.sign;
+    }
+
+    public Parity refineParity(ReducedProduct rp){
+        
+        if(rp.sign.isBottom()){
+            return rp.parity.bottom();
+        }
+
+        return rp.parity;
+    }
 
 
     @Override

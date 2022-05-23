@@ -37,7 +37,7 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 		this((byte) 0);
 	}
 
-	private Parity(byte parity) {
+	public Parity(byte parity) {
 		this.parity = parity;
 	}
 
@@ -82,11 +82,11 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 		return top();
 	}
 
-	private boolean isEven() {
+	public boolean isEven() {
 		return this == EVEN;
 	}
 
-	private boolean isOdd() {
+	public boolean isOdd() {
 		return this == ODD;
 	}
 
