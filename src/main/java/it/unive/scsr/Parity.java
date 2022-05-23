@@ -22,10 +22,10 @@ import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
 
 public class Parity extends BaseNonRelationalValueDomain<Parity> {
 
-	private static final Parity EVEN = new Parity((byte) 3);
-	private static final Parity ODD = new Parity((byte) 2);
-	private static final Parity TOP = new Parity((byte) 0);
-	private static final Parity BOTTOM = new Parity((byte) 1);
+	public static final Parity EVEN = new Parity((byte) 3);
+	public static final Parity ODD = new Parity((byte) 2);
+	public static final Parity TOP = new Parity((byte) 0);
+	public static final Parity BOTTOM = new Parity((byte) 1);
 
 	private final byte parity;
 

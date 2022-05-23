@@ -136,43 +136,71 @@ public class ReducedProduct extends BaseNonRelationalValueDomain<ReducedProduct>
 
         ReducedProduct evalResult = super.eval(expression, environment, pp);
       
-        evalResult.sign = refineSign(evalResult);
-        evalResult.parity = refineParity(evalResult);
+        evalResult.parity = parityReduction(evalResult);
+        evalResult.sign = signReduction(evalResult);
 
         return evalResult;
     }
     
-    public ExtSignDomainSolution refineSign(ReducedProduct rp){
+
+    /**
+     * Refinement of the parity domain by using the information of the extended sign domain
+     * @param reducedProduct instance of the product between domains to refine
+     * @return the refined ExtSignDomain instance
+     */
+    public Parity parityReduction(ReducedProduct reducedProduct){
         
-        if(rp.parity.isBottom()){
-            return rp.sign.bottom();
+        // If the sign is bottom then the whole product is bottom to stay sound
+        if(reducedProduct.sign.isBottom()){
+            return reducedProduct.parity.bottom();
         }
 
-        switch(rp.sign.getSign()){
-            case POS_OR_ZERO:
-                if(rp.parity.isOdd()){
-                    return new ExtSignDomainSolution(ExtSignDomainSolution.Sign.POS);
-                }
-                break;
-            case NEG_OR_ZERO:
-                if(rp.parity.isOdd()){
-                    return new ExtSignDomainSolution(ExtSignDomainSolution.Sign.NEG);
-                }
-                break;
-            default: // No more refinements are possible
-                return rp.sign;
+        if(reducedProduct.sign.getSign() == ExtSignDomainSolution.Sign.ZERO){
+            
+            // If the sign is zero and the parity is top then we know that the parity is even
+            if(reducedProduct.parity.isTop()){
+                return Parity.EVEN;
+            }
+            
+            // If the sign is zero and the number is odd then something is wrong because 0 is even
+            if(reducedProduct.parity.isOdd()){ 
+                return parity.bottom();
+            }
         }
-        
-        return rp.sign;
+
+        // No refinements needed
+        return reducedProduct.parity;
     }
 
-    public Parity refineParity(ReducedProduct rp){
+    
+    /**
+     * Refinement of the extended sign domain by using the information of the parity domain
+     * @param reducedProduct instance of the product between domains to refine
+     * @return the refined ExtSignDomain instance
+     */
+    public ExtSignDomainSolution signReduction(ReducedProduct reducedProduct){
         
-        if(rp.sign.isBottom()){
-            return rp.parity.bottom();
+        // If the sign is bottom then the whole product is bottom to stay sound
+        if(reducedProduct.parity.isBottom()){
+            return reducedProduct.sign.bottom();
         }
 
-        return rp.parity;
+        if(reducedProduct.parity.isOdd()){
+            
+            // If the number is odd and the sign is 0 or minus, the fact that 0 is even implies that the sign is minus
+            if(reducedProduct.sign.getSign() == ExtSignDomainSolution.Sign.NEG_OR_ZERO){
+                return new ExtSignDomainSolution(ExtSignDomainSolution.Sign.NEG);
+            }
+
+            // If the number is odd and the sign is 0 or plus, the fact that 0 is even implies that the sign is plus
+            if(reducedProduct.sign.getSign() == ExtSignDomainSolution.Sign.POS_OR_ZERO){
+                return new ExtSignDomainSolution(ExtSignDomainSolution.Sign.POS);
+            }
+        }
+        
+        // No refinements needed
+        return reducedProduct.sign;
+
     }
 
 
