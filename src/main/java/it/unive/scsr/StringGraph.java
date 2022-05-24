@@ -1,13 +1,15 @@
 package it.unive.scsr;
 
+import it.unive.lisa.analysis.SemanticDomain;
+import it.unive.lisa.program.cfg.statement.string.Concat;
 import it.unive.scsr.Exceptions.InvalidCharacterException;
 import it.unive.scsr.Exceptions.WrongBuildStringGraphException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static it.unive.lisa.analysis.SemanticDomain.Satisfiability.*;
 
 public class StringGraph {
 
@@ -173,6 +175,83 @@ public class StringGraph {
         this.bound = bound;
     }
 
+    protected void compact() {
+        for (StringGraph s : this.getSons()){
+            if (this.getFathers().contains(s))
+                return;
+            else
+                s.compact();
+        }
+
+        // RULE 1
+        if (!nonEmptyDenotation()) {
+            this.label = NodeType.EMPTY;
+            this.setSons(new ArrayList<>());
+        }
+
+        // RULE 2
+        if (this.label == NodeType.OR){
+            for(StringGraph son: this.getSons()) {
+                if (son.label == NodeType.EMPTY) {
+                    this.removeSon(son);
+                }
+            }
+        }
+
+        // RULE 3
+        if (this.label == NodeType.OR && this.getSons().contains(this)){
+            this.removeSon(this);
+        }
+
+        // RULE 4
+        if (this.label == NodeType.OR && this.getSons().size() == 0){
+            this.label = NodeType.EMPTY;
+            this.setSons(new ArrayList<>());
+        }
+
+        // RULE 5
+        if (this.label == NodeType.OR){
+            boolean hasMaxSon = false;
+            for(StringGraph son: this.getSons()) {
+                if (son.label == NodeType.MAX) hasMaxSon = true;
+            }
+            if (hasMaxSon){
+                this.label = NodeType.MAX;
+                this.setSons(new ArrayList<>());
+            }
+        }
+
+        // RULE 6
+        if (this.label == NodeType.OR){
+            for(StringGraph son: this.getSons()) {
+                if (son.label == NodeType.OR && son.getFathers().size() == 1) {
+                    this.removeSon(son);
+                    this.sons.addAll(son.getSons());
+                }
+            }
+        }
+
+        // RULE 7
+        if (this.label == NodeType.OR && this.getSons().size() ==1){
+            this.label = this.getSons().get(0).label;
+            this.setSons(this.getSons().get(0).getSons());
+            this.setFathers(this.getSons().get(0).getFathers());
+            this.fathers.remove(this);
+        }
+
+        // RULE 8
+        if (this.label == NodeType.OR){
+            for(StringGraph son: this.getSons()) {
+                if (son.label == NodeType.OR && son.getFathers().size() > 1) {
+                    for(StringGraph father : son.fathers){
+                        father.removeSon(son);
+                        father.addSon(this);
+                    }
+                }
+            }
+        }
+    }
+
 
     protected void normalize() {
         for (StringGraph s : this.getSons()){
@@ -257,7 +336,7 @@ public class StringGraph {
         this.setNormalized(true);
     }
 
-    public boolean contains(CHARACTER c) {
+    private boolean containsCharWithoutOR(CHARACTER c) {
         boolean result = false;
         if (this.label == NodeType.SIMPLE) return this.character == c;
         else if (this.label == NodeType.MAX) return true;
@@ -266,11 +345,47 @@ public class StringGraph {
         else if (this.label == NodeType.CONCAT) {
 
             for (StringGraph s : this.getSons()) {
-                result = result || s.contains(c);
+                result = result || s.containsCharWithoutOR(c);
             }
 
         }
         return result;
+    }
+
+    private boolean containsCharOrMax(CHARACTER c) {
+        boolean result = false;
+        if (this.label == NodeType.SIMPLE) return this.character == c;
+        else if (this.label == NodeType.MAX) return true;
+        else {
+            for (StringGraph s : this.getSons()) {
+                result = result || s.containsCharOrMax(c);
+            }
+        }
+        return result;
+    }
+
+    public SemanticDomain.Satisfiability contains(CHARACTER c) {
+        if (!containsCharOrMax(c)) return NOT_SATISFIED;
+        else if (containsCharWithoutOR(c)) return SATISFIED;
+        else return UNKNOWN;
+    }
+
+    private boolean nonEmptyDenotation() {
+        boolean result;
+        if(this.label == NodeType.CONCAT && this.getSons().size() > 0) {
+            result = true;
+            for (StringGraph son : this.getSons()) {
+                result = result && son.nonEmptyDenotation();
+            }
+            return result;
+        } else if(this.label == NodeType.OR) {
+            result = false;
+            for (StringGraph son : this.getSons()) {
+                result = result || son.nonEmptyDenotation();
+            }
+            return result;
+        }
+        return this.label == NodeType.SIMPLE || (this.label == NodeType.CONCAT && this.getSons().size() == 0);
     }
 
     @Override
@@ -301,18 +416,18 @@ public class StringGraph {
         else return false;
     }
 
-    public StringGraph substring(int leftbound, int rightbound) {
+    public StringGraph substring(int leftBound, int rightBound) {
 
         if (this.label == NodeType.CONCAT &&
-            this.getSons().size() >= rightbound - 1) {
+            this.getSons().size() >= rightBound - 1) {
 
-            for(int i = 0; i < rightbound - 1; ++i) {
+            for(int i = 0; i < rightBound - 1; ++i) {
                 if (this.getSons().get(i).label != NodeType.SIMPLE)
                     return StringGraph.buildMAX();
             }
 
             List<StringGraph> substringSons = new ArrayList<>();
-            for(int i = leftbound; i < rightbound - 1; ++i) {
+            for(int i = leftBound; i < rightBound - 1; ++i) {
                 substringSons.add(this.getSons().get(i));
             }
             return new StringGraph(NodeType.CONCAT, substringSons, null);
@@ -386,5 +501,22 @@ public class StringGraph {
 //        return result;
 //    }
 
+
+    private Set<NodeType> principalLabels() {
+        switch(this.label) {
+            case CONCAT: return Set.of(NodeType.CONCAT);
+            case MAX: return Set.of(NodeType.MAX);
+            case SIMPLE: return Set.of(NodeType.SIMPLE);
+            case OR: {
+                Set<NodeType> labels = new HashSet<>();
+                for(StringGraph son : sons) {
+                    labels.addAll(son.principalLabels());
+                }
+                return labels;
+            }
+            case EMPTY: return Set.of(NodeType.EMPTY);
+            default: throw new WrongBuildStringGraphException("Invalid graph label");
+        }
+    }
 
 }

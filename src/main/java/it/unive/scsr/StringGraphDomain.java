@@ -1,23 +1,19 @@
 package it.unive.scsr;
 
+import it.unive.lisa.analysis.SemanticDomain;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.symbolic.value.TernaryExpression;
-import it.unive.lisa.symbolic.value.operator.StringOperator;
 import it.unive.lisa.symbolic.value.operator.binary.BinaryOperator;
 import it.unive.lisa.symbolic.value.operator.binary.StringConcat;
 import it.unive.lisa.symbolic.value.operator.binary.StringContains;
 import it.unive.lisa.symbolic.value.operator.ternary.StringSubstring;
 import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
-import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
-import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
 import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,16 +35,23 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
     }
 
     @Override
+    protected SemanticDomain.Satisfiability satisfiesBinaryExpression(BinaryOperator operator, StringGraphDomain left, StringGraphDomain right, ProgramPoint pp) throws SemanticException {
+        if (operator instanceof StringContains) {
+            return left.stringGraph.contains(right.stringGraph.getCharacter());
+        }
+        return SemanticDomain.Satisfiability.UNKNOWN;
+    }
+
+    @Override
     protected StringGraphDomain evalBinaryExpression(BinaryOperator operator, StringGraphDomain left,
                                                          StringGraphDomain right,
                                                          ProgramPoint pp) {
 
         if (operator instanceof StringConcat) {
             StringGraph stringGraph = StringGraph.buildCONCAT(left.stringGraph, right.stringGraph);
+            stringGraph.compact();
             stringGraph.normalize();
             return new StringGraphDomain(stringGraph);
-        } else if (operator instanceof StringContains) {
-            // return new StringGraphDomain(left.stringGraph.contains(right.stringGraph.getCharacter()));
         }
         return new StringGraphDomain(StringGraph.buildMAX());
     }
@@ -56,6 +59,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
     @Override
     protected StringGraphDomain lubAux(StringGraphDomain other) {
         StringGraph lubGraph = new StringGraph(StringGraph.NodeType.OR, new ArrayList<>(List.of(this.stringGraph, other.stringGraph)), null);
+        lubGraph.compact();
         lubGraph.normalize();
         return new StringGraphDomain(lubGraph);
     }
