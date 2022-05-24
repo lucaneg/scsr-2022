@@ -1,0 +1,89 @@
+class test {
+
+    //test if condition
+    f0(){
+        def x = 0;
+        if( x == 0 ){
+            x = -2;
+        }
+        return x;
+    }
+
+    //test if not condition
+    f1(){
+        def x = 5;
+        if( x != 0 ){
+            x = -2;
+        }
+        return x;
+    }
+
+    //test if not condition
+    f2(){
+        def x = 5;
+        if( x != 6 ){
+            x = -2;
+        }
+        return x;
+    }
+
+    //test if >= condition
+    f3(){
+        def x = 5;
+        if( x >= -6 ){
+            x = -2;
+        }
+        return x;
+    }
+
+    //test while condition
+    f4(){
+        def x = -5;
+        def y = 30;
+        while(x != y){
+            x = x - 2;
+        }
+        return x;
+    }
+
+    //test while condition
+    f5(){
+        def x = -5;
+        def y = 30;
+        while(x != y){
+            x = x + 2;
+        }
+        return x;
+    }
+
+    //test while condition
+    f6(){
+        def x = -5;
+        def y = 30;
+        while(x <= y){
+            x = x + 2;
+        }
+        return x;
+    }
+
+    //test for for condition
+    f7(){
+        def x = 1;
+        for(def i = 1; i <= 6; i = i + 1){
+            x = x + 1;
+        }
+        return x;
+    }
+
+    //test for <= operator
+    f8(){
+        def x = -1;
+        def y = 10;
+        def z = 0;
+        if(x <= y){
+            z = 1;
+        }
+        return z;
+    }
+
+}
