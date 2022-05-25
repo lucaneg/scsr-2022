@@ -127,6 +127,18 @@ public class StringGraph {
         son.getFathers().remove(this);
     }
 
+    public void addAllSons(List<StringGraph> sons){
+        for(StringGraph s : sons) {
+            this.addSon(s);
+        }
+    }
+
+    public void removeAllSons(){
+        for (StringGraph s : this.sons) {
+            this.removeSon(s);
+        }
+    }
+
     public NodeType getLabel() {
         return label;
     }
@@ -139,18 +151,18 @@ public class StringGraph {
         return sons;
     }
 
+    /*
     public void setSons(List<StringGraph> sons) {
         this.sons = sons;
-    }
-
+    }*/
     public List<StringGraph> getFathers() {
         return fathers;
     }
 
+    /*
     public void setFathers(List<StringGraph> fathers) {
         this.fathers = fathers;
-    }
-
+    }*/
     public void setNormalized(boolean normalized) {
         this.normalized = normalized;
     }
@@ -177,158 +189,162 @@ public class StringGraph {
 
     protected void compact() {
         for (StringGraph s : this.getSons()){
-            if (this.getFathers().contains(s))
-                return;
-            else
+            if (!(this.getFathers().contains(s))) {
                 s.compact();
+            }
         }
 
         // RULE 1
         if (!nonEmptyDenotation()) {
-            this.label = NodeType.EMPTY;
-            this.setSons(new ArrayList<>());
+            this.setLabel(NodeType.EMPTY);
+            this.removeAllSons();
         }
 
         // RULE 2
-        if (this.label == NodeType.OR){
+        if (this.getLabel() == NodeType.OR){
             for(StringGraph son: this.getSons()) {
-                if (son.label == NodeType.EMPTY) {
+                if (son.getLabel() == NodeType.EMPTY) {
                     this.removeSon(son);
                 }
             }
         }
 
         // RULE 3
-        if (this.label == NodeType.OR && this.getSons().contains(this)){
+        if (this.getLabel() == NodeType.OR && this.getSons().contains(this)){
             this.removeSon(this);
         }
 
         // RULE 4
-        if (this.label == NodeType.OR && this.getSons().size() == 0){
-            this.label = NodeType.EMPTY;
-            this.setSons(new ArrayList<>());
+        if (this.getLabel() == NodeType.OR && this.getSons().size() == 0){
+            this.setLabel(NodeType.EMPTY);
+            this.removeAllSons();
         }
 
         // RULE 5
-        if (this.label == NodeType.OR){
+        if (this.getLabel() == NodeType.OR){
             boolean hasMaxSon = false;
             for(StringGraph son: this.getSons()) {
-                if (son.label == NodeType.MAX) hasMaxSon = true;
+                if (son.getLabel() == NodeType.MAX) hasMaxSon = true;
             }
             if (hasMaxSon){
-                this.label = NodeType.MAX;
-                this.setSons(new ArrayList<>());
+                this.setLabel(NodeType.MAX);
+                this.removeAllSons();
             }
         }
 
         // RULE 6
-        if (this.label == NodeType.OR){
+        if (this.getLabel() == NodeType.OR){
             for(StringGraph son: this.getSons()) {
-                if (son.label == NodeType.OR && son.getFathers().size() == 1) {
+                if (son.getLabel() == NodeType.OR && son.getFathers().size() == 1) {
                     this.removeSon(son);
-                    this.sons.addAll(son.getSons());
+                    this.addAllSons(son.getSons());
+                    son.removeAllSons();
                 }
             }
         }
 
         // RULE 7
-        if (this.label == NodeType.OR && this.getSons().size() ==1){
-            this.label = this.getSons().get(0).label;
-            this.setSons(this.getSons().get(0).getSons());
-            this.setFathers(this.getSons().get(0).getFathers());
-            this.fathers.remove(this);
+        if (this.getLabel() == NodeType.OR && this.getSons().size() == 1){
+            this.setLabel(this.getSons().get(0).getLabel());
+            this.removeAllSons();
+            this.addAllSons(this.getSons().get(0).getSons());
+            this.getSons().get(0).removeAllSons();
+            if (this.getSons().get(0).getFathers().size() > 0){
+                for (StringGraph father : this.getSons().get(0).getFathers()){
+                    father.addSon(this);
+                    father.removeSon(this.getSons().get(0));
+                }
+            }
         }
 
         // RULE 8
-        if (this.label == NodeType.OR){
-            for(StringGraph son: this.getSons()) {
-                if (son.label == NodeType.OR && son.getFathers().size() > 1) {
-                    for(StringGraph father : son.fathers){
-                        father.removeSon(son);
-                        father.addSon(this);
+        if (this.getLabel() == NodeType.OR){
+            for(StringGraph son: this.getSons()){
+                if (son.getLabel() == NodeType.OR && son.getFathers().size() > 1) {
+                    for(StringGraph father : son.getFathers()){
+                        if(!father.equals(this)) {
+                            father.removeSon(son);
+                            father.addSon(this);
+                        }
                     }
                 }
             }
         }
     }
 
-
     protected void normalize() {
         for (StringGraph s : this.getSons()){
-            if (this.getFathers().contains(s))
-                return;
-            else
+            if (!(this.getFathers().contains(s)))
                 s.normalize();
         }
 
         // RULE 1
-        if (this.label == NodeType.CONCAT && this.sons.size() == 1) {
-            this.setLabel(this.sons.get(0).getLabel());
-            this.setSons(this.sons.get(0).getSons());
+        if (this.getLabel() == NodeType.CONCAT && this.getSons().size() == 1) {
+            StringGraph s = this.getSons().get(0);
+            this.setLabel(s.getLabel());
+            this.removeAllSons();
+            this.addAllSons(s.getSons());
+            for (StringGraph father : s.getFathers()){
+                father.addSon(this);
+                father.removeSon(s);
+            }
         }
 
         // RULE 2
-        if (this.label == NodeType.CONCAT) {
-            AtomicBoolean applyRule = new AtomicBoolean(true);
-            for(StringGraph son: this.getSons()) {
-                if (son.label != NodeType.MAX) {
-                    applyRule.set(false);
-                }
+        if (this.getLabel() == NodeType.CONCAT) {
+            boolean allMaxSons = true;
+            for(StringGraph son: this.getSons()){
+                if(son.getLabel() != NodeType.MAX)
+                    allMaxSons = false;
             }
-            if (applyRule.get()) {
+            if(allMaxSons){
                 this.setLabel(NodeType.MAX);
-                this.setSons(null);
+                this.removeAllSons();
             }
-
         }
 
         // RULE 3
-        if (this.label == NodeType.CONCAT) {
+        if (this.getLabel() == NodeType.CONCAT) {
             if (this.getSons().size() >= 2) {
                 AtomicReference<StringGraph> previousSibling;
                 AtomicReference<StringGraph> currentSibling;
 
                 int pos = 0;
-                boolean appliedRule = false;
+                //boolean appliedRule = false;
                 do {
                     previousSibling = new AtomicReference<>(this.getSons().get(pos));
                     currentSibling = new AtomicReference<>(this.getSons().get(++pos));
 
-                    if (previousSibling.get().label == NodeType.CONCAT && currentSibling.get().label == NodeType.CONCAT &&
+                    if (previousSibling.get().getLabel() == NodeType.CONCAT && currentSibling.get().getLabel() == NodeType.CONCAT &&
                             (previousSibling.get().getFathers().size() == 1) && (currentSibling.get().getFathers().size() == 1)) {
 
-                        previousSibling.get().getSons().addAll(currentSibling.get().getSons()); // Adding currentSibling sons to previous sibling sons
-                        previousSibling.get().setSons(previousSibling.get().getSons());
+                        previousSibling.get().addAllSons(currentSibling.get().getSons()); // Adding currentSibling sons to previous sibling sons
+                        currentSibling.get().removeAllSons();
 
-                        for (StringGraph s : currentSibling.get().getSons()) {
-                            if (currentSibling.get().getFathers().contains(s)) {
-                                s.removeSon(currentSibling.get()); // assuming just one edge pointing up
-                                s.addSon(previousSibling.get());
-                            }
-                            s.getFathers().remove(currentSibling.get());
-                            s.getFathers().add(previousSibling.get());
+                        for(StringGraph father : currentSibling.get().getFathers()){
+                            father.addSon(previousSibling.get());
+                            father.removeSon(currentSibling.get());
                         }
-                        appliedRule = true;
+                        //appliedRule = true;
                     }
                     ++pos;
-                } while(pos < this.getSons().size() && !appliedRule);
+                } while(pos < this.getSons().size() /*&& !appliedRule*/);
 
+                /* fatto con il for dentro all'if precedente
                 if (appliedRule){
-                    this.getSons().remove(currentSibling.get());
-                }
-
+                    this.removeSon(currentSibling.get());
+                }*/
             }
         }
 
         // RULE 4
-        if (this.label == NodeType.CONCAT &&
-            this.getSons().get(0).getFathers().size() == 1 &&
-            this.getSons().get(0).getLabel() == NodeType.CONCAT) {
-
-            for (StringGraph s : this.getSons().get(0).getSons()) {
-                this.getSons().add(s); // adding son to first concat
-                s.getFathers().remove(this.getSons().get(0)); // removing intermediate concat to fathers' list
-                s.getFathers().add(this); // adding first concat to fathers' list
+        if (this.label == NodeType.CONCAT){
+            for(StringGraph son : this.getSons()){
+                if(son.getLabel() == NodeType.CONCAT && son.getFathers().size() == 1){
+                    this.addAllSons(son.getSons());
+                    this.removeSon(son); // don't need for bc son has only one father
+                    son.removeAllSons(); // need to remove the sons' fathers lists
+                }
             }
         }
 
@@ -418,11 +434,11 @@ public class StringGraph {
 
     public StringGraph substring(int leftBound, int rightBound) {
 
-        if (this.label == NodeType.CONCAT &&
+        if (this.getLabel() == NodeType.CONCAT &&
             this.getSons().size() >= rightBound - 1) {
 
             for(int i = 0; i < rightBound - 1; ++i) {
-                if (this.getSons().get(i).label != NodeType.SIMPLE)
+                if (this.getSons().get(i).getLabel() != NodeType.SIMPLE)
                     return StringGraph.buildMAX();
             }
 
