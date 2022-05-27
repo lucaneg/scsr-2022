@@ -1,0 +1,12 @@
+class availableExpressions {
+	test4(){
+    def a = 10;
+    def b = 5;
+    def x = a + b;
+    def y = a*b;
+    while(y > a + b){
+      a = a + 1;
+      x = a + b;
+    }
+  }
+}
