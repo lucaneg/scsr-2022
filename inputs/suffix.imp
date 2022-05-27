@@ -1,0 +1,63 @@
+class Suffix{
+	f0(){
+		def x = "abccd";
+		def y = "abce";
+		return y;
+	}
+	
+	f1(){
+		def x = "ciao";
+		def y = "mio";
+		y = strcat(x, y);
+		return y;
+	}
+	
+	f2(){
+		def x = "ciao come stai";
+		return strsub(x, "0", "5");
+	}
+	
+	f3(){
+		def x = "abcdef";
+		def y = "";
+		if (strcon(x, "a"))
+    		y = "A";
+		else
+   			 y = "B";
+		return y;
+	}
+	
+	f4(){
+		def x = "a";
+		def cond = true;
+		while(cond)
+			x = "0" + x + "1";
+		return x;
+	}
+	
+	f5(){
+		def query = "SELECT RETAIL FROM INVENTORY WHERE ";
+		def l = 1;
+		if(l != null)
+			query = query + "WHOLESALE " + l + " AND ";
+		def per = "SELECT TYPECODE, TYPEDESC FROM TYPES WHERE NAME = 'fish' OR NAME = 'meat'";
+		query = query + "TYPE IN " + per;
+		return query;
+	}
+	
+	f6(){
+		def x = "How";
+		def y = "are";
+		def z = "you?";
+		if(strcon(x, "H")){
+			z = x + y + z;
+		}
+		else{
+			def cond = true;
+			while(cond)
+				z = "0" + x +"1";
+		}
+		
+		return z;
+	}
+}
