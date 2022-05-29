@@ -238,7 +238,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                         //Evaluate operation in the form (0-) - (0+)
                         case ZERO_PLUS -> new ExtSignDomain(ExtSign.ZERO_MINUS);
                         //Evaluate operation in the form (0-) - (0-)
-                        case ZERO_MINUS -> new ExtSignDomain(ExtSign.ZERO_MINUS); //TODO check correctness
+                        case ZERO_MINUS -> new ExtSignDomain(ExtSign.ZERO_MINUS);
                         //Evaluate operation in the form (0-) - (-b)
                         case MINUS -> new ExtSignDomain(ExtSign.PLUS);
                         //Evaluate operation in the form (0-) - (T | B)
@@ -253,7 +253,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                         //Evaluate operation in the form (0+) - (0+)
                         case ZERO_PLUS -> new ExtSignDomain(ExtSign.ZERO);
                         //Evaluate operation in the form (0+) - (0-)
-                        case ZERO_MINUS -> new ExtSignDomain(ExtSign.ZERO_PLUS); //TODO check correctness
+                        case ZERO_MINUS -> new ExtSignDomain(ExtSign.ZERO_PLUS);
                         //Evaluate operation in the form (0+) - (-b)
                         case MINUS -> new ExtSignDomain(ExtSign.PLUS);
                         //Evaluate operation in the form (0+) - (T | B)

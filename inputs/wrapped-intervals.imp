@@ -1,0 +1,9 @@
+class wrappedIntervals{
+ 	f1() {
+		def a = 5;
+        while (a != 7) {
+            a = a + 1;
+        }
+        return a;
+    }
+}
