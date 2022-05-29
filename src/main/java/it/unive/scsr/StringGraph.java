@@ -248,14 +248,15 @@ public class StringGraph {
 
         // RULE 7
         if (this.getLabel() == NodeType.OR && this.getSons().size() == 1){
-            this.setLabel(this.getSons().get(0).getLabel());
+            StringGraph son = this.getSons().get(0);
+            this.setLabel(son.getLabel());
             this.removeAllSons();
-            this.addAllSons(this.getSons().get(0).getSons());
-            this.getSons().get(0).removeAllSons();
-            if (this.getSons().get(0).getFathers().size() > 0){
-                for (StringGraph father : this.getSons().get(0).getFathers()){
+            this.addAllSons(son.getSons());
+            son.removeAllSons();
+            if (son.getFathers().size() > 0){
+                for (StringGraph father : son.getFathers()){
                     father.addSon(this);
-                    father.removeSon(this.getSons().get(0));
+                    father.removeSon(son);
                 }
             }
         }
