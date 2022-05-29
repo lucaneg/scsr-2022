@@ -1,13 +1,13 @@
 package it.unive.scsr;
 
 import it.unive.lisa.analysis.SemanticDomain;
-import it.unive.lisa.program.cfg.statement.string.Concat;
 import it.unive.scsr.Exceptions.InvalidCharacterException;
 import it.unive.scsr.Exceptions.WrongBuildStringGraphException;
+import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static it.unive.lisa.analysis.SemanticDomain.Satisfiability.*;
 
@@ -16,8 +16,8 @@ public class StringGraph {
     enum NodeType {
         CONCAT,
         OR,
-        EMPTY,
-        MAX,
+        EMPTY, // represent a simple node
+        MAX, // represent a simple node
         SIMPLE
     }
 
@@ -195,7 +195,7 @@ public class StringGraph {
         }
 
         // RULE 1
-        if (!nonEmptyDenotation()) {
+        if (this.getLabel() == NodeType.CONCAT && !nonEmptyDenotation()) {
             this.setLabel(NodeType.EMPTY);
             this.removeAllSons();
         }
@@ -224,7 +224,10 @@ public class StringGraph {
         if (this.getLabel() == NodeType.OR){
             boolean hasMaxSon = false;
             for(StringGraph son: this.getSons()) {
-                if (son.getLabel() == NodeType.MAX) hasMaxSon = true;
+                if (son.getLabel() == NodeType.MAX) {
+                    hasMaxSon = true;
+                    break;
+                }
             }
             if (hasMaxSon){
                 this.setLabel(NodeType.MAX);
@@ -406,6 +409,7 @@ public class StringGraph {
 
     @Override
     public boolean equals(Object o){
+        assert o.getClass() != StringGraph.class;
         StringGraph other = (StringGraph)o;
         if (this.getSons().equals(other.getSons()) && this.getFathers().equals(other.getFathers())) {
             int i = 0;
@@ -518,20 +522,144 @@ public class StringGraph {
 //    }
 
 
-    private Set<NodeType> principalLabels() {
-        switch(this.label) {
-            case CONCAT: return Set.of(NodeType.CONCAT);
-            case MAX: return Set.of(NodeType.MAX);
-            case SIMPLE: return Set.of(NodeType.SIMPLE);
-            case OR: {
-                Set<NodeType> labels = new HashSet<>();
-                for(StringGraph son : sons) {
-                    labels.addAll(son.principalLabels());
-                }
-                return labels;
+    private Collection<NodeType> getPrincipalLabels() {
+
+        // Check for nodes in principal nodes and extract their labels
+        return getPrincipalNodes().stream().map(StringGraph::getLabel).collect(Collectors.toSet());
+    }
+
+    Collection<StringGraph> getPrincipalNodes() {
+
+        if (this.label != NodeType.OR)
+            return Set.of(this);
+        else {
+            Collection<StringGraph> principalSubNodes = new HashSet<>();
+
+            for (StringGraph son : this.getSons()) {
+                principalSubNodes.addAll(son.getPrincipalNodes());
             }
-            case EMPTY: return Set.of(NodeType.EMPTY);
-            default: throw new WrongBuildStringGraphException("Invalid graph label");
+
+            principalSubNodes.add(this);
+            return principalSubNodes;
+        }
+
+    }
+
+    private boolean checkPartialOrder (StringGraph first, StringGraph second, List<Pair<StringGraph, StringGraph>> edges) {
+        Pair<StringGraph, StringGraph> currentEdge = new Pair<>(first, second);
+        if (edges.contains(currentEdge)) return true;
+        else if (second.getLabel() == StringGraph.NodeType.MAX) return true;
+        else if (first.getLabel() == StringGraph.NodeType.CONCAT &&
+                second.getLabel() == StringGraph.NodeType.CONCAT &&
+                first.getSons().size() == second.getSons().size() &&
+                first.getSons().size() > 0) {
+            boolean result = false;
+            edges.add(new Pair<>(first, second));
+            for(int i = 0; i < first.getSons().size(); i++){
+                result = result || checkPartialOrder(first.getSons().get(i), second.getSons().get(i), edges);
+            }
+            return result;
+        }
+        else if (first.getLabel() == StringGraph.NodeType.OR &&
+                second.getLabel() == StringGraph.NodeType.OR){
+            boolean result = false;
+            edges.add(new Pair<>(first, second));
+            for(StringGraph son : first.getSons()){
+                result = result ||checkPartialOrder(son, second, edges);
+            }
+            return result;
+        }
+        else if (second.getLabel() == StringGraph.NodeType.OR && !Objects.isNull(checkLabelEquality(second.getPrincipalNodes(), first))) {
+            edges.add(new Pair<>(first, second));
+            return checkPartialOrder(first, checkLabelEquality(second.getPrincipalNodes(), first), edges);
+        } else {
+            return first.getLabel().equals(second.getLabel());
+        }
+    }
+
+    public static StringGraph checkLabelEquality(Collection<StringGraph> stringGraphList, StringGraph stringGraph) {
+        boolean result;
+        for(StringGraph s : stringGraphList) {
+            result = s.getLabel().equals(stringGraph.getLabel());
+            if (result) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    private boolean isCorrespondenceSet(StringGraph other) {
+        return this.depth() == other.depth() && this.getPrincipalLabels().equals(other.getPrincipalLabels());
+    }
+
+
+    private boolean cycleInductionRule() {
+        return false;
+    }
+
+    private boolean replacementRule() {
+        return false;
+    }
+
+    private boolean wideningTopologicalClash(StringGraph other) {
+
+        boolean result = false;
+
+        if (!this.isTopologicalClash(other)) {
+            return false;
+        } else {
+            // Checking all left sub nodes with all right sub nodes
+            for (StringGraph son : this.getSons()) {
+                for (StringGraph otherSon : other.getSons()) {
+                    result = result || son.wideningTopologicalClash(otherSon);
+                    if (result)
+                        break;
+                }
+            }
+
+            return result || this.wideningTopologicalClashAux(other);
+
+        }
+
+    }
+
+    private boolean wideningTopologicalClashAux(StringGraph other) {
+        return (!other.getPrincipalLabels().isEmpty() &&
+               (!this.getPrincipalLabels().equals(other.getPrincipalLabels()) && this.depth() == other.depth()) ||
+                this.depth() < other.depth());
+    }
+
+    private boolean isTopologicalClash(StringGraph other) {
+
+
+        return false;
+    }
+
+    private Collection<StringGraph> getAncestors() {
+
+        Collection<StringGraph> ancestors = new HashSet<>();
+
+        if (this.getFathers().isEmpty())
+            return new HashSet<>();
+
+
+        for (StringGraph father : this.getFathers()) {
+            ancestors.addAll(this.getFathers());
+            ancestors.addAll(father.getAncestors());
+        }
+
+        return ancestors;
+    }
+
+    private int depth() {
+        if(this.getSons().size() == 0) {
+            return 1;
+        }
+        else {
+            int graphDepth = 0;
+            for(StringGraph son : this.getSons())
+                graphDepth += son.depth();
+            return ++graphDepth; // Considering root of a complete graph
         }
     }
 

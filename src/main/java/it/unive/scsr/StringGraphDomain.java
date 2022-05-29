@@ -14,6 +14,7 @@ import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
 import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -99,28 +100,15 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
             }
             return result;
         }
-        else if (second.getLabel() == StringGraph.NodeType.OR && !Objects.isNull(checkLabelEquality(getPrincipalNodes(second), first))) {
+        else if (second.getLabel() == StringGraph.NodeType.OR && !Objects.isNull(StringGraph.checkLabelEquality(second.getPrincipalNodes(), first))) {
             edges.add(new Pair<>(first, second));
-            return checkPartialOrder(first, checkLabelEquality(getPrincipalNodes(second), first), edges);
+            return checkPartialOrder(first, StringGraph.checkLabelEquality(second.getPrincipalNodes(), first), edges);
         } else {
             return first.getLabel().equals(second.getLabel());
         }
     }
 
-    private List<StringGraph> getPrincipalNodes(StringGraph stringGraph) {
-        return new ArrayList<>(); // TODO: da fare
-    }
 
-    private StringGraph checkLabelEquality(List<StringGraph> stringGraphList, StringGraph stringGraph) {
-        boolean result;
-        for(StringGraph s : stringGraphList) {
-            result = s.getLabel().equals(stringGraph.getLabel());
-            if (result) {
-                return s;
-            }
-        }
-        return null;
-    }
 
     @Override
     public boolean equals(Object obj) {
