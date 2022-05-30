@@ -589,51 +589,102 @@ public class StringGraph {
         return null;
     }
 
-    private boolean isCorrespondenceSet(StringGraph other) {
-        return this.depth() == other.depth() && this.getPrincipalLabels().equals(other.getPrincipalLabels());
+    private boolean correspondenceSet(StringGraph other) {
+        return !(this.depth() == other.depth() && this.getPrincipalLabels().equals(other.getPrincipalLabels()));
     }
 
 
-    private boolean cycleInductionRule() {
+    private boolean cycleInductionRule(StringGraph other) {
         return false;
     }
 
-    private boolean replacementRule() {
-        return false;
+    private boolean replacementRule(StringGraph other) {
+
+        boolean result = false;
+
+        if (this.wideningTopologicalClash(other)) {
+            for (StringGraph son : other.getSons()) {
+                result = this.replacementRuleAux(son);
+                if (result)
+                    break;
+            }
+        }
+
+        return result;
+    }
+
+    private boolean replacementRuleAux(StringGraph other) {
+
+        Collection<StringGraph> ancertors = other.getAncestors();
+
+        boolean result = false;
+
+        // ancestor --> va
+        // other    --> vn
+        // son      --> vo
+        for (StringGraph son : this.getSons()) {
+            for (StringGraph ancestor : ancertors) {
+                if (!checkPartialOrder(other, ancestor, new ArrayList<>()) &&
+                    son.depth() >= ancestor.depth() && (ancestor.getPrincipalLabels().contains(other.getPrincipalLabels()) || son.depth() < other.depth())) {
+                    result = true;
+                    break;
+                }
+            }
+        }
+
+        return result; // No ancestor for root node
+
     }
 
     private boolean wideningTopologicalClash(StringGraph other) {
 
-        boolean result = false;
-
-        if (!this.isTopologicalClash(other)) {
-            return false;
-        } else {
-            // Checking all left sub nodes with all right sub nodes
-            for (StringGraph son : this.getSons()) {
-                for (StringGraph otherSon : other.getSons()) {
-                    result = result || son.wideningTopologicalClash(otherSon);
-                    if (result)
-                        break;
-                }
-            }
-
-            return result || this.wideningTopologicalClashAux(other);
-
+        if (this.topologicalClash(other)) {
+           return this.wideningTopologicalClashAux(other);
         }
-
+        return false;
     }
 
     private boolean wideningTopologicalClashAux(StringGraph other) {
-        return (!other.getPrincipalLabels().isEmpty() &&
-               (!this.getPrincipalLabels().equals(other.getPrincipalLabels()) && this.depth() == other.depth()) ||
-                this.depth() < other.depth());
+
+        boolean result = false;
+
+        // Checking all left sub nodes with all right sub nodes
+        for (StringGraph son : this.getSons()) {
+            for (StringGraph otherSon : other.getSons()) {
+                result = result || son.wideningTopologicalClash(otherSon);
+                if (result)
+                    break;
+            }
+        }
+
+        return result || (!other.getPrincipalLabels().isEmpty() &&
+                         (!this.getPrincipalLabels().equals(other.getPrincipalLabels()) && this.depth() == other.depth()) ||
+                           this.depth() < other.depth());
     }
 
-    private boolean isTopologicalClash(StringGraph other) {
+    private boolean topologicalClash(StringGraph other) {
 
-
+        if (checkPartialOrder(this, other, new ArrayList<>())) {
+            return this.topologicalClashAux(other);
+        }
         return false;
+    }
+
+    private boolean topologicalClashAux(StringGraph other) {
+
+        boolean result = false;
+
+        // Checking all left sub nodes with all right sub nodes
+        for (StringGraph son : this.getSons()) {
+            for (StringGraph otherSon : other.getSons()) {
+                result = result || son.topologicalClash(otherSon);
+                if (result)
+                    break;
+            }
+        }
+
+        return result || (this.correspondenceSet(other) &&
+                !(this.depth() == other.depth() && this.getPrincipalLabels().equals(other.getPrincipalLabels())));
     }
 
     private Collection<StringGraph> getAncestors() {
@@ -664,4 +715,47 @@ public class StringGraph {
         }
     }
 
+    /**
+     * In `this` string graph, replace nodeToBeReplaced with nodeToReplace
+     * @param nodeToBeReplaced
+     * @param replacingNode
+     */
+    private void replaceVertex(StringGraph nodeToBeReplaced, StringGraph replacingNode) {
+        if (this.searchForNode(nodeToBeReplaced) && this.searchForNode(replacingNode)) {
+            List<StringGraph> fathers = nodeToBeReplaced.getFathers();
+            List<StringGraph> sons = nodeToBeReplaced.getSons();
+
+            for(StringGraph father : fathers) {
+                father.removeSon(nodeToBeReplaced);
+                father.addSon(replacingNode);
+            }
+
+            nodeToBeReplaced.removeAllSons();
+            replacingNode.addAllSons(sons);
+
+        }
+    }
+
+    private void replaceEdge(StringGraph edgeToBeRemoved, StringGraph edgeToBeAdded) {
+        if (this.searchForNode(edgeToBeRemoved) && this.searchForNode(edgeToBeAdded)) {
+            this.removeSon(edgeToBeRemoved);
+            this.addSon(edgeToBeAdded);
+        }
+    }
+
+    private boolean searchForNode(StringGraph node) {
+        boolean result;
+
+        if(this.equals(node)) {
+            return true;
+        }
+        else {
+            for (StringGraph son : this.getSons()) {
+                result = son.searchForNode(node);
+                if (result)
+                    return true;
+            }
+            return false;
+        }
+    }
 }
