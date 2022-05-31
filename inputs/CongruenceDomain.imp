@@ -8,14 +8,21 @@ class tutorial {
    		return b;
     }
 
-	basic() {
+	basic1() {
 		def i = 2;
 		def j = -10;
 		def a = i + j;
 		def s = i - j;
-		def m = i * j;
-		def d = i / j;
 	}
+
+	basic2() {
+    		def i = 2;
+    		def j = -10;
+    		def m = i * j;
+    		def d = j / i;
+    		def e = m % d;
+    		return e;
+    	}
 
 	branches(a, b) {
 		def x = 0;
@@ -33,8 +40,34 @@ class tutorial {
             x = x + 2;
             if (x < 5)
                 y = y + 18;
-            if (x>5)
+            else
                 y = y - 30;
         }
     }
+
+    prova2() {
+            def x = 0;
+            def y = 2;
+            def z = 4;
+            while (x < 40){
+                x = x + 2;
+                if (x < 5)
+                    y = y + 18;
+                else
+                    z = x%3;
+            }
+
+      }
+
+    prova3(){
+            def y=6;
+            while(y<100){
+                y=y-18;
+            }
+            y=6;
+            while(y<100){
+                y=y+18;
+            }
+        }
+
 }
