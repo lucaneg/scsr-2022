@@ -554,39 +554,45 @@ public class StringGraph {
                 second.getLabel() == StringGraph.NodeType.CONCAT &&
                 first.getSons().size() == second.getSons().size() &&
                 first.getSons().size() > 0) {
-            boolean result = false;
+            boolean result = true;
             edges.add(new Pair<>(first, second));
             for(int i = 0; i < first.getSons().size(); i++){
-                result = result || checkPartialOrder(first.getSons().get(i), second.getSons().get(i), edges);
+                result = result && checkPartialOrder(first.getSons().get(i), second.getSons().get(i), edges);
             }
             return result;
         }
         else if (first.getLabel() == StringGraph.NodeType.OR &&
                 second.getLabel() == StringGraph.NodeType.OR){
-            boolean result = false;
+            boolean result = true;
             edges.add(new Pair<>(first, second));
             for(StringGraph son : first.getSons()){
-                result = result ||checkPartialOrder(son, second, edges);
+                result = result && checkPartialOrder(son, second, edges);
             }
             return result;
         }
-        else if (second.getLabel() == StringGraph.NodeType.OR && !Objects.isNull(checkLabelEquality(second.getPrincipalNodes(), first))) {
-            edges.add(new Pair<>(first, second));
-            return checkPartialOrder(first, checkLabelEquality(second.getPrincipalNodes(), first), edges);
+        else if (second.getLabel() == StringGraph.NodeType.OR) {
+            boolean result = false;
+            List<StringGraph> labelEqualitySons = labelEqualitySet(second.getPrincipalNodes(), first);
+            if (labelEqualitySons.size() > 0) {
+                edges.add(new Pair<>(first, second));
+                for (StringGraph s : labelEqualitySons) {
+                    result = result || checkPartialOrder(first, s, edges);
+                }
+            }
+            return result;
         } else {
             return first.getLabel().equals(second.getLabel());
         }
     }
 
-    public static StringGraph checkLabelEquality(Collection<StringGraph> stringGraphList, StringGraph stringGraph) {
-        boolean result;
+    public static List<StringGraph> labelEqualitySet(Collection<StringGraph> stringGraphList, StringGraph stringGraph) {
+        List<StringGraph> result = new ArrayList<>();
         for(StringGraph s : stringGraphList) {
-            result = s.getLabel().equals(stringGraph.getLabel());
-            if (result) {
-                return s;
+            if (s.getLabel().equals(stringGraph.getLabel())) {
+                result.add(s);
             }
         }
-        return null;
+        return result;
     }
 
     private boolean correspondenceSet(StringGraph other) {
