@@ -12,9 +12,10 @@ import it.unive.lisa.symbolic.value.operator.binary.StringContains;
 import it.unive.lisa.symbolic.value.operator.ternary.StringSubstring;
 import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
 import org.antlr.v4.runtime.misc.Pair;
+import static it.unive.scsr.StringGraph.checkPartialOrder;
+
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -75,40 +76,6 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
         List<Pair<StringGraph, StringGraph>> edges = new ArrayList<>();
         return checkPartialOrder(this.stringGraph, other.stringGraph, edges);
     }
-
-    private boolean checkPartialOrder (StringGraph first, StringGraph second, List<Pair<StringGraph, StringGraph>> edges) {
-        Pair<StringGraph, StringGraph> currentEdge = new Pair<>(first, second);
-        if (edges.contains(currentEdge)) return true;
-        else if (second.getLabel() == StringGraph.NodeType.MAX) return true;
-        else if (first.getLabel() == StringGraph.NodeType.CONCAT &&
-                second.getLabel() == StringGraph.NodeType.CONCAT &&
-                first.getSons().size() == second.getSons().size() &&
-                first.getSons().size() > 0) {
-            boolean result = false;
-            edges.add(new Pair<>(first, second));
-            for(int i = 0; i < first.getSons().size(); i++){
-                result = result || checkPartialOrder(first.getSons().get(i), second.getSons().get(i), edges);
-            }
-            return result;
-        }
-        else if (first.getLabel() == StringGraph.NodeType.OR &&
-                second.getLabel() == StringGraph.NodeType.OR){
-            boolean result = false;
-            edges.add(new Pair<>(first, second));
-            for(StringGraph son : first.getSons()){
-                result = result ||checkPartialOrder(son, second, edges);
-            }
-            return result;
-        }
-        else if (second.getLabel() == StringGraph.NodeType.OR && !Objects.isNull(StringGraph.checkLabelEquality(second.getPrincipalNodes(), first))) {
-            edges.add(new Pair<>(first, second));
-            return checkPartialOrder(first, StringGraph.checkLabelEquality(second.getPrincipalNodes(), first), edges);
-        } else {
-            return first.getLabel().equals(second.getLabel());
-        }
-    }
-
-
 
     @Override
     public boolean equals(Object obj) {

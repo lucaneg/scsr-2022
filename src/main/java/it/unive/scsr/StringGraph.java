@@ -546,7 +546,7 @@ public class StringGraph {
 
     }
 
-    private boolean checkPartialOrder (StringGraph first, StringGraph second, List<Pair<StringGraph, StringGraph>> edges) {
+    public static boolean checkPartialOrder (StringGraph first, StringGraph second, List<Pair<StringGraph, StringGraph>> edges) {
         Pair<StringGraph, StringGraph> currentEdge = new Pair<>(first, second);
         if (edges.contains(currentEdge)) return true;
         else if (second.getLabel() == StringGraph.NodeType.MAX) return true;
