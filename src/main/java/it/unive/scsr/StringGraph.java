@@ -22,7 +22,7 @@ public class StringGraph {
     }
 
     enum CHARACTER {
-        a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, Ɛ
+        a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
     }
 
     private NodeType label;
@@ -61,60 +61,69 @@ public class StringGraph {
 
     }
 
-    private static CHARACTER map(char c) {
-        return switch (c) {
-            case 'a' -> CHARACTER.a;
-            case 'b' -> CHARACTER.b;
-            case 'c' -> CHARACTER.c;
-            case 'd' -> CHARACTER.d;
-            case 'e' -> CHARACTER.e;
-            case 'f' -> CHARACTER.f;
-            case 'g' -> CHARACTER.g;
-            case 'h' -> CHARACTER.h;
-            case 'i' -> CHARACTER.i;
-            case 'j' -> CHARACTER.j;
-            case 'k' -> CHARACTER.k;
-            case 'l' -> CHARACTER.l;
-            case 'm' -> CHARACTER.m;
-            case 'n' -> CHARACTER.n;
-            case 'o' -> CHARACTER.o;
-            case 'p' -> CHARACTER.p;
-            case 'q' -> CHARACTER.q;
-            case 'r' -> CHARACTER.r;
-            case 's' -> CHARACTER.s;
-            case 't' -> CHARACTER.t;
-            case 'u' -> CHARACTER.u;
-            case 'v' -> CHARACTER.v;
-            case 'w' -> CHARACTER.w;
-            case 'x' -> CHARACTER.x;
-            case 'y' -> CHARACTER.y;
-            case 'z' -> CHARACTER.z;
-            case 'Ɛ' -> CHARACTER.Ɛ;
-            default -> throw new InvalidCharacterException(c);
-        };
-    }
-
     public StringGraph(String stringToRepresent) {
-        this.label = NodeType.CONCAT;
         this.fathers = new ArrayList<>();
         this.sons = new ArrayList<>();
-        for (int i = 0; i < stringToRepresent.length(); i++){
-            StringGraph son = new StringGraph(NodeType.SIMPLE, new ArrayList<>(), StringGraph.map(stringToRepresent.charAt(i)));
-            this.addSon(son);
-        }
         this.normalized = true;
+        if (isStringInt(stringToRepresent)) {
+            this.label = NodeType.CONCAT;
+            for (int i = 0; i < stringToRepresent.length(); i++) {
+                StringGraph son = new StringGraph(NodeType.SIMPLE, new ArrayList<>(), StringGraph.map(stringToRepresent.charAt(i)));
+                this.addSon(son);
+            }
+        } else {
+            this.label = NodeType.SIMPLE;
+            this.bound = Integer.parseInt(stringToRepresent);
+        }
+
     }
 
+    private boolean isStringInt(String s) {
+        try {
+            Integer.parseInt(s);
+            return true;
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+    }
+
+    private static CHARACTER map(char c) {
+        switch (c) {
+            case 'a': return CHARACTER.a;
+            case 'b': return CHARACTER.b;
+            case 'c': return CHARACTER.c;
+            case 'd': return CHARACTER.d;
+            case 'e': return CHARACTER.e;
+            case 'f': return CHARACTER.f;
+            case 'g': return CHARACTER.g;
+            case 'h': return CHARACTER.h;
+            case 'i': return CHARACTER.i;
+            case 'j': return CHARACTER.j;
+            case 'k': return CHARACTER.k;
+            case 'l': return CHARACTER.l;
+            case 'm': return CHARACTER.m;
+            case 'n': return CHARACTER.n;
+            case 'o': return CHARACTER.o;
+            case 'p': return CHARACTER.p;
+            case 'q': return CHARACTER.q;
+            case 'r': return CHARACTER.r;
+            case 's': return CHARACTER.s;
+            case 't': return CHARACTER.t;
+            case 'u': return CHARACTER.u;
+            case 'v': return CHARACTER.v;
+            case 'w': return CHARACTER.w;
+            case 'x': return CHARACTER.x;
+            case 'y': return CHARACTER.y;
+            case 'z': return CHARACTER.z;
+            default: throw new InvalidCharacterException(c);
+        }
+    }
 
     public StringGraph(NodeType label) {
         assert(!(label == NodeType.CONCAT));
         this.label = label;
         this.sons = new ArrayList<>();
         this.fathers = new ArrayList<>();
-    }
-
-    public StringGraph(int bound) {
-        this.bound = bound;
     }
 
     public void addSon(StringGraph son){

@@ -17,16 +17,18 @@ import static it.unive.scsr.StringGraph.checkPartialOrder;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
 
-    private StringGraph stringGraph;
+    private final StringGraph stringGraph;
 
     public StringGraphDomain(StringGraph stringGraph) {
         this.stringGraph = stringGraph;
     }
 
+    public StringGraphDomain() {
+        this(null);
+    }
 
     @Override
     protected StringGraphDomain evalTernaryExpression(TernaryOperator operator, StringGraphDomain left, StringGraphDomain middle, StringGraphDomain right, ProgramPoint pp) throws SemanticException {
@@ -68,7 +70,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
     @Override
     protected StringGraphDomain wideningAux(StringGraphDomain other) {
-        return null;
+        return lubAux(other);
     }
 
     @Override

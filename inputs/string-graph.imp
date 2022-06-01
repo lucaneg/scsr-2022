@@ -1,0 +1,20 @@
+class stringGraphTests {
+
+    /*fsg;
+    ssg;
+
+    ~stringGraphTests() {
+        this.fsg = "firststringgraph";
+        this.ssg = "secondstringgraph";
+    }
+
+    testingConcat() {
+        new stringGraphTests();
+        //return strcat(this.fsg, this.ssg);
+    }*/
+
+    testingSubstring() {
+        return strsub("supercalifragilistichespiralidoso", "0", "5");
+    }
+
+}
