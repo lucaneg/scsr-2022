@@ -45,12 +45,10 @@ public class ModularBinaryString implements Comparable<ModularBinaryString>{
         return new ModularBinaryString ("1", maxValue);
     }
 
-    //TODO: fix to return string
     public long asUnsigned() {
         return Long.parseUnsignedLong(this.binaryString, 2);
     }
 
-    //TODO: fix to return string
     public long asSigned() throws SumOverflowException {
         if (align(getBinaryString(), getOverflowAt())[0].charAt(1) == '0')
             return asUnsigned();

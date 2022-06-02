@@ -5,6 +5,7 @@ import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.BinaryExpression;
 import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.operator.AdditionOperator;
 import it.unive.lisa.symbolic.value.operator.DivisionOperator;
@@ -14,7 +15,10 @@ import it.unive.lisa.symbolic.value.operator.binary.*;
 import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
 import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
 import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
+import it.unive.lisa.type.BooleanType;
 import it.unive.lisa.type.NumericType;
+import it.unive.lisa.type.Type;
+import it.unive.lisa.type.TypeTokenType;
 import it.unive.lisa.type.common.*;
 
 import java.util.ArrayList;
@@ -99,7 +103,7 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
         if(this.type == WrappedInterval.BOTTOM)
             return 0;
         if(this.type == WrappedInterval.TOP)
-            return MAX_VALUE; //TODO: fix, information is lost due to constructors
+            return MAX_VALUE;
         return left.modularSubtraction(right).modularSum(ModularBinaryString.getOne(left.getOverflowAt())).asUnsigned();
     }
 
@@ -209,7 +213,7 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
         WrappedIntervals f = BOTTOM;
         WrappedIntervals g = BOTTOM;
         ArrayList <WrappedIntervals> lexOrdering = new ArrayList<>();
-        if(this.left.compareTo(other.left) <= 0){ //TODO check if this is definition
+        if(this.left.compareTo(other.left) <= 0){
             lexOrdering.add(this);
             lexOrdering.add(other);
         }
@@ -325,12 +329,37 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
 
 
     @Override
+    protected WrappedIntervals evalTypeConv(BinaryExpression conv, WrappedIntervals sx, WrappedIntervals dx, ProgramPoint pp) throws SemanticException {
+        Type type = conv.getRuntimeTypes().first();
+        long    memorySize = 0;
+        if(type.equals(Int8.INSTANCE) || type.equals(UInt8.INSTANCE)){
+            memorySize = 8;
+        } else  if(type.equals(Int16.INSTANCE)|| type.equals(UInt16.INSTANCE)){
+            memorySize = 16;
+        } else if(type.equals(Int32.INSTANCE)|| type.equals(UInt32.INSTANCE)){
+            memorySize = 32;
+        } else if(type.equals(Int64.INSTANCE)|| type.equals(UInt64.INSTANCE)){
+            memorySize = 64;
+        }
+        if(memorySize != 0){
+            String maxInt = Long.toBinaryString((long)Math.pow(2, memorySize));
+            try {
+                return new WrappedIntervals(sx.left.getBinaryString(), sx.right.getBinaryString(), maxInt);
+            } catch (ModularBinaryString.SumOverflowException e) {
+                throw new SemanticException(e);
+            }
+        }
+        return top();
+    }
+
+    @Override
+    protected WrappedIntervals evalTypeCast(BinaryExpression cast, WrappedIntervals sx, WrappedIntervals dx, ProgramPoint pp) throws SemanticException {
+        return evalTypeConv(cast, sx, dx, pp);
+    }
+
+    @Override
     protected WrappedIntervals evalBinaryExpression(BinaryOperator operator, WrappedIntervals sx, WrappedIntervals dx, ProgramPoint pp) throws SemanticException {
         try{
-            if(operator instanceof TypeCast){
-                operator = (TypeCast) operator;//TODO: implement type cast & conversion
-            }
-
             if(operator instanceof NumericNonOverflowingAdd){ //Cheating again...
                 operator = Numeric8BitAdd.INSTANCE;
             } else if(operator instanceof NumericNonOverflowingSub){
@@ -400,7 +429,7 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
         if (constant.getStaticType() instanceof NumericType
                 && !(constant.getStaticType() instanceof Float32) && !(constant.getStaticType() instanceof Float64)) {
 
-            constant = new Constant(Int8.INSTANCE, constant.getValue(), pp.getLocation()); //TODO: cheating
+            constant = new Constant(Int8.INSTANCE, constant.getValue(), pp.getLocation());
             try {
                 if(constant.getStaticType() instanceof Int8 || constant.getStaticType() instanceof UInt8) //Safe to deal here thanks to cast to int type
                     memorySize = 8;
@@ -414,7 +443,7 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
                     memorySize = 64;
                     return new WrappedIntervals((String)constant.getValue(), (String)constant.getValue(), Long.toBinaryString((long)Math.pow(2, memorySize)));
                 }
-                return new WrappedIntervals((Integer)constant.getValue(), (Integer)constant.getValue(), (long)Math.pow(2, memorySize)); //TODO: fix taking from int
+                return new WrappedIntervals((Integer)constant.getValue(), (Integer)constant.getValue(), (long)Math.pow(2, memorySize));
             } catch (ModularBinaryString.SumOverflowException e) {
                 throw new SemanticException(e);
             }
