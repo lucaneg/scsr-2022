@@ -17,6 +17,7 @@ import static it.unive.scsr.StringGraph.checkPartialOrder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
 
@@ -70,7 +71,25 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
     @Override
     protected StringGraphDomain wideningAux(StringGraphDomain other) {
-        return lubAux(other);
+
+        // other --> gn
+        // this --> go
+        if (StringGraph.checkPartialOrder(this.stringGraph, other.stringGraph, new ArrayList<>())) {
+            return this;
+        } else {
+            return this.wideningAux(this.lubAux(other));
+        }
+    }
+
+    public StringGraphDomain widen(StringGraphDomain other) {
+        // other --> gn
+        // this --> go
+        StringGraph gResCI = StringGraph.cycleInductionRule(this.stringGraph, other.stringGraph);
+        StringGraph gResCR = StringGraph.replacementRule(this.stringGraph, other.stringGraph);
+
+        if (!Objects.isNull(gResCI)) return this.widen(this.lubAux(new StringGraphDomain(gResCI)));
+        else if (!Objects.isNull(gResCR)) return this.widen(this.lubAux(new StringGraphDomain(gResCR)));
+        else return other;
     }
 
     @Override

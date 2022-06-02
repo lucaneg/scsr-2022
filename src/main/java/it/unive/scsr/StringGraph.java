@@ -609,45 +609,82 @@ public class StringGraph {
     }
 
 
-    private boolean cycleInductionRule(StringGraph other) {
-        return false;
-    }
-
-    private boolean replacementRule(StringGraph other) {
-
-        boolean result = false;
-
-        if (this.wideningTopologicalClash(other)) {
+    public static StringGraph cycleInductionRule(StringGraph root, StringGraph other) {
+        Pair<StringGraph, StringGraph> nodesToCheck = null;
+        if (root.wideningTopologicalClash(other)) {
             for (StringGraph son : other.getSons()) {
-                result = this.replacementRuleAux(son);
-                if (result)
+                nodesToCheck = root.replacementRuleAux(son);
+                if (!Objects.isNull(nodesToCheck))
                     break;
             }
         }
 
-        return result;
+        if (!Objects.isNull(nodesToCheck)) {
+            other.replaceEdge(nodesToCheck.a, nodesToCheck.b);
+            return other;
+        }
+        return null;
     }
 
-    private boolean replacementRuleAux(StringGraph other) {
-
-        Collection<StringGraph> ancertors = other.getAncestors();
-
-        boolean result = false;
+    private Pair<StringGraph, StringGraph> cycleInductionRuleAux(StringGraph other) {
+        Collection<StringGraph> ancestors = other.getAncestors();
+        Pair<StringGraph, StringGraph> pair = null;
 
         // ancestor --> va
         // other    --> vn
         // son      --> vo
         for (StringGraph son : this.getSons()) {
-            for (StringGraph ancestor : ancertors) {
-                if (!checkPartialOrder(other, ancestor, new ArrayList<>()) &&
-                    son.depth() >= ancestor.depth() && (ancestor.getPrincipalLabels().contains(other.getPrincipalLabels()) || son.depth() < other.depth())) {
-                    result = true;
+            for (StringGraph ancestor : ancestors) {
+                if (checkPartialOrder(other, ancestor, new ArrayList<>()) &&
+                    son.depth() >= ancestor.depth() &&
+                    son.depth() - other.depth() < 2) {
+                    pair = new Pair<>(ancestor, other);
                     break;
                 }
             }
         }
 
-        return result; // No ancestor for root node
+        return pair; // No ancestor for root node
+    }
+
+    public static StringGraph replacementRule(StringGraph root, StringGraph other) {
+
+        Pair<StringGraph, StringGraph> nodesToCheck = null;
+        if (root.wideningTopologicalClash(other)) {
+            for (StringGraph son : other.getSons()) {
+                nodesToCheck = root.replacementRuleAux(son);
+                if (!Objects.isNull(nodesToCheck))
+                    break;
+            }
+        }
+
+        if (!Objects.isNull(nodesToCheck)) {
+            other.replaceVertex(nodesToCheck.a, nodesToCheck.b);
+            return other;
+        }
+        return null;
+    }
+
+    private Pair<StringGraph, StringGraph> replacementRuleAux(StringGraph other) {
+
+        Collection<StringGraph> ancestors = other.getAncestors();
+        Pair<StringGraph, StringGraph> pair = null;
+
+        // ancestor --> va
+        // other    --> vn
+        // son      --> vo
+        for (StringGraph son : this.getSons()) {
+            for (StringGraph ancestor : ancestors) {
+                if (!checkPartialOrder(other, ancestor, new ArrayList<>()) &&
+                    son.depth() >= ancestor.depth() &&
+                    (ancestor.getPrincipalLabels().contains(other.getPrincipalLabels()) || son.depth() < other.depth())) {
+                    pair = new Pair<>(ancestor, other);
+                    break;
+                }
+            }
+        }
+
+        return pair; // No ancestor for root node
 
     }
 
