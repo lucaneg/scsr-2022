@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static it.unive.lisa.analysis.SemanticDomain.Satisfiability.*;
+import static it.unive.scsr.StringGraph.NodeType.SIMPLE;
 
 public class StringGraph {
 
@@ -40,6 +41,17 @@ public class StringGraph {
             this.addSon(son);
         }
 
+        boolean allSonsSIMPLE = true;
+        for (StringGraph son: sons) {
+            if (son.getLabel() != NodeType.SIMPLE) {
+                allSonsSIMPLE = false;
+                break;
+            }
+        }
+
+        if (allSonsSIMPLE) this.normalized = true;
+
+
         // Checking CONCAT and OR node have at least one node
         if ((label == NodeType.CONCAT && (this.getSons().size() == 0)) ||
             (label == NodeType.OR && (this.getSons().size() == 0)))
@@ -49,11 +61,11 @@ public class StringGraph {
         if (this.label == NodeType.MAX && this.getSons().size() > 0)
             throw new WrongBuildStringGraphException("MAX node cannot have son.");
 
-        if (this.label == NodeType.SIMPLE && Objects.isNull(this.character)) {
+        if (this.label == SIMPLE && Objects.isNull(this.character)) {
             throw new WrongBuildStringGraphException("SIMPLE node must have a character associated.");
         }
 
-        if (this.label != NodeType.SIMPLE && !Objects.isNull(this.character)) {
+        if (this.label != SIMPLE && !Objects.isNull(this.character)) {
             throw new WrongBuildStringGraphException("Only SIMPLE can have a character associated.");
         }
 
@@ -62,17 +74,17 @@ public class StringGraph {
     public StringGraph(String stringToRepresent) {
         this.normalized = true;
         if (isStringInt(stringToRepresent)) {
-            this.label = NodeType.SIMPLE;
+            this.label = SIMPLE;
             this.bound = Integer.parseInt(stringToRepresent);
         } else if (stringToRepresent.length() == 0) {
             this.label = NodeType.EMPTY;
         } else if (stringToRepresent.length() == 1) {
-            this.label = NodeType.SIMPLE;
+            this.label = SIMPLE;
             this.character = StringGraph.map(stringToRepresent.charAt(0));
         } else {
             this.label = NodeType.CONCAT;
             for (int i = 0; i < stringToRepresent.length(); i++) {
-                StringGraph son = new StringGraph(NodeType.SIMPLE, new ArrayList<>(), StringGraph.map(stringToRepresent.charAt(i)));
+                StringGraph son = new StringGraph(SIMPLE, new ArrayList<>(), StringGraph.map(stringToRepresent.charAt(i)));
                 this.addSon(son);
             }
         }
@@ -419,7 +431,7 @@ public class StringGraph {
 
     private boolean containsCharWithoutOR(CHARACTER c) {
         boolean result = false;
-        if (this.label == NodeType.SIMPLE) return this.character == c;
+        if (this.label == SIMPLE) return this.character == c;
         else if (this.label == NodeType.MAX) return true;
         else if (this.label == NodeType.EMPTY) return false;
         else if (this.label == NodeType.OR) return false;
@@ -435,7 +447,7 @@ public class StringGraph {
 
     private boolean containsCharOrMax(CHARACTER c) {
         boolean result = false;
-        if (this.label == NodeType.SIMPLE) return this.character == c;
+        if (this.label == SIMPLE) return this.character == c;
         else if (this.label == NodeType.MAX) return true;
         else {
             for (StringGraph s : this.getSons()) {
@@ -466,7 +478,7 @@ public class StringGraph {
             }
             return result;
         }
-        return this.label == NodeType.SIMPLE || (this.label == NodeType.CONCAT && this.getSons().size() == 0);
+        return this.label == SIMPLE || (this.label == NodeType.CONCAT && this.getSons().size() == 0);
     }
 
 //    @Override
@@ -507,8 +519,8 @@ public class StringGraph {
         if (this.getLabel() == NodeType.CONCAT &&
             this.getSons().size() >= rightBound - 1) {
 
-            for(int i = 0; i < rightBound - 1; ++i) {
-                if (this.getSons().get(i).getLabel() != NodeType.SIMPLE)
+            for(int i = 0; i < rightBound; ++i) {
+                if (this.getSons().get(i).getLabel() != SIMPLE)
                     return StringGraph.buildMAX();
             }
 
@@ -870,13 +882,14 @@ public class StringGraph {
     @Override
     public String toString() {
         StringBuilder stringGraphToRepresent = new StringBuilder();
-
         switch (this.label) {
             case MAX:
                 return "MAX";
             case EMPTY:
                 return "EMPTY";
             case SIMPLE:
+                if (Objects.isNull(this.character))
+                    return this.bound.toString();
                 return this.character.toString();
             case OR:
                 stringGraphToRepresent.append("OR[");
@@ -895,6 +908,5 @@ public class StringGraph {
             default:
                 throw new WrongBuildStringGraphException(String.format("Type %s does not exists.", this.label));
         }
-
     }
 }

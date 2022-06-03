@@ -6,23 +6,35 @@ class stringGraphTests {
         this.ssg = "secondstringgraph";
     }
 
-    /*testingConcat() {
+    testingConcat() {
         return strcat(this.fsg, this.ssg);
     }
 
     testingSubstring() {
         return strsub("supercalifragilisticexpialidocious", "0", "5");
-    }*/
+    }
+
+    testingSubstringFull() {
+        def myString = "supercalifragilisticexpialidocious";
+        def z = "";
+        if (streq(strsub(myString, "0", "5"), "super")) {
+            z = "ifbranch";
+        } else {
+            z = "elsebranch";
+        }
+        return z;
+    }
 
     testingContains() {
         def myString = "hello";
         def z = "";
         if (strcon(myString, "h"))
-             z = strsub(myString, "1", "3");
+             z = "ifbranch";
         else
              z = "elsebranch";
         return z;
     }
+
 
     testingFull() {
        def concatString = strcat("d", strcat("a",strcat("b","c")));
@@ -31,9 +43,7 @@ class stringGraphTests {
             z = strsub(concatString, "1", "3");
        else
             z = "elsebranch";
-       return z;
+        return z;
     }
-
-
 
 }

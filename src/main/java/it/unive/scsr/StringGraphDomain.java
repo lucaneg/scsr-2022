@@ -59,6 +59,8 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
         return SemanticDomain.Satisfiability.UNKNOWN;
     }
 
+
+
     @Override
     protected StringGraphDomain evalBinaryExpression(BinaryOperator operator, StringGraphDomain left,
                                                          StringGraphDomain right,
