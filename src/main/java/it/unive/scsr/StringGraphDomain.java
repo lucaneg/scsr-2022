@@ -6,12 +6,15 @@ import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.operator.binary.BinaryOperator;
 import it.unive.lisa.symbolic.value.operator.binary.StringConcat;
 import it.unive.lisa.symbolic.value.operator.binary.StringContains;
 import it.unive.lisa.symbolic.value.operator.ternary.StringSubstring;
 import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
 import org.antlr.v4.runtime.misc.Pair;
+
+import static it.unive.scsr.StringGraph.buildMAX;
 import static it.unive.scsr.StringGraph.checkPartialOrder;
 
 
@@ -29,6 +32,15 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
     public StringGraphDomain() {
         this(null);
+    }
+
+    @Override
+    protected StringGraphDomain evalNonNullConstant(Constant constant, ProgramPoint pp) throws SemanticException {
+        if(constant.getValue() instanceof String) {
+            String constantWithoutApex = ((String)constant.getValue()).replace("\"","");
+            return new StringGraphDomain(new StringGraph(constantWithoutApex));
+        }
+        return super.evalNonNullConstant(constant, pp);
     }
 
     @Override
@@ -77,7 +89,7 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
         if (StringGraph.checkPartialOrder(this.stringGraph, other.stringGraph, new ArrayList<>())) {
             return this;
         } else {
-            return this.wideningAux(this.lubAux(other));
+            return this.widen(this.lubAux(other));
         }
     }
 
@@ -100,12 +112,14 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
 
     @Override
     public boolean equals(Object obj) {
-        return this.stringGraph.equals(obj);
+
+        if (obj instanceof StringGraphDomain) return this.stringGraph.equals(((StringGraphDomain) obj).stringGraph);
+        return false;
     }
 
     @Override
     public int hashCode() {
-        return 0;
+        return Objects.hash(stringGraph);
     }
 
     @Override
@@ -121,5 +135,19 @@ public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphD
     @Override
     public StringGraphDomain bottom() {
         return new StringGraphDomain(StringGraph.buildEMPTY());
+    }
+
+    @Override
+    public boolean isTop() {
+        if (!Objects.isNull(this.stringGraph))
+            return this.stringGraph.getLabel() == StringGraph.NodeType.MAX;
+        return true;
+    }
+
+    @Override
+    public boolean isBottom() {
+        if (!Objects.isNull(this.stringGraph))
+            return this.stringGraph.getLabel() == StringGraph.NodeType.EMPTY;
+        return true;
     }
 }

@@ -26,29 +26,27 @@ public class StringGraph {
     }
 
     private NodeType label;
-    private List<StringGraph> fathers;
-    private List<StringGraph> sons;
+    private List<StringGraph> fathers = new ArrayList<>();;
+    private List<StringGraph> sons = new ArrayList<>();
     private boolean normalized = false;
     private CHARACTER character;
     private Integer bound; // NEEDED FOR evalTernaryExpression() METHOD
 
     public StringGraph(NodeType label, List<StringGraph> sons, CHARACTER character) {
         this.label = label;
-        this.sons = sons;
         this.character = character;
 
         for (StringGraph son : sons) {
-            son.getFathers().add(this);
-            this.getSons().add(son);
+            this.addSon(son);
         }
 
         // Checking CONCAT and OR node have at least one node
-        if ((label == NodeType.CONCAT && !(this.getSons().size() == 0)) ||
-            (label == NodeType.OR && !(this.getSons().size() == 0)))
+        if ((label == NodeType.CONCAT && (this.getSons().size() == 0)) ||
+            (label == NodeType.OR && (this.getSons().size() == 0)))
             throw new WrongBuildStringGraphException("OR node and CONCAT node must have at least one son.");
 
         // We make sure root has no sons
-        if (this.label == NodeType.MAX && this.sons.size() > 0)
+        if (this.label == NodeType.MAX && this.getSons().size() > 0)
             throw new WrongBuildStringGraphException("MAX node cannot have son.");
 
         if (this.label == NodeType.SIMPLE && Objects.isNull(this.character)) {
@@ -62,21 +60,26 @@ public class StringGraph {
     }
 
     public StringGraph(String stringToRepresent) {
-        this.fathers = new ArrayList<>();
-        this.sons = new ArrayList<>();
         this.normalized = true;
         if (isStringInt(stringToRepresent)) {
+            this.label = NodeType.SIMPLE;
+            this.bound = Integer.parseInt(stringToRepresent);
+        } else if (stringToRepresent.length() == 0) {
+            this.label = NodeType.EMPTY;
+        } else if (stringToRepresent.length() == 1) {
+            this.label = NodeType.SIMPLE;
+            this.character = StringGraph.map(stringToRepresent.charAt(0));
+        } else {
             this.label = NodeType.CONCAT;
             for (int i = 0; i < stringToRepresent.length(); i++) {
                 StringGraph son = new StringGraph(NodeType.SIMPLE, new ArrayList<>(), StringGraph.map(stringToRepresent.charAt(i)));
                 this.addSon(son);
             }
-        } else {
-            this.label = NodeType.SIMPLE;
-            this.bound = Integer.parseInt(stringToRepresent);
         }
 
     }
+
+
 
     private boolean isStringInt(String s) {
         try {
@@ -115,7 +118,7 @@ public class StringGraph {
             case 'x': return CHARACTER.x;
             case 'y': return CHARACTER.y;
             case 'z': return CHARACTER.z;
-            default: throw new InvalidCharacterException(c);
+            default: throw new WrongBuildStringGraphException(c + " is not a valid character.");
         }
     }
 
@@ -126,14 +129,22 @@ public class StringGraph {
         this.fathers = new ArrayList<>();
     }
 
-    public void addSon(StringGraph son){
-        this.getSons().add(son);
-        son.getFathers().add(this);
+    public void addSon(StringGraph son) {
+        if (!this.sons.contains(son)) this.getSons().add(son);
+        if (!son.getFathers().contains(this)) son.getFathers().add(this);
     }
 
     public void removeSon(StringGraph son){
         this.getSons().remove(son);
         son.getFathers().remove(this);
+    }
+
+    public void removeSons(List<StringGraph> sons) {
+        this.getSons().removeAll(sons);
+
+        for (StringGraph son : sons) {
+            this.removeSon(son);
+        }
     }
 
     public void addAllSons(List<StringGraph> sons){
@@ -211,11 +222,15 @@ public class StringGraph {
 
         // RULE 2
         if (this.getLabel() == NodeType.OR){
+            List<StringGraph> emptyNodes = new ArrayList<>();
             for(StringGraph son: this.getSons()) {
                 if (son.getLabel() == NodeType.EMPTY) {
-                    this.removeSon(son);
+                    emptyNodes.add(son);
                 }
             }
+
+            this.removeSons(emptyNodes);
+
         }
 
         // RULE 3
@@ -265,8 +280,8 @@ public class StringGraph {
             if (son.getFathers().size() > 0){
                 for (StringGraph father : son.getFathers()){
                     father.addSon(this);
-                    father.removeSon(son);
                 }
+                son.removeAllFathers();
             }
         }
 
@@ -307,8 +322,10 @@ public class StringGraph {
         if (this.getLabel() == NodeType.CONCAT) {
             boolean allMaxSons = true;
             for(StringGraph son: this.getSons()){
-                if(son.getLabel() != NodeType.MAX)
+                if (son.getLabel() != NodeType.MAX) {
                     allMaxSons = false;
+                    break;
+                }
             }
             if(allMaxSons){
                 this.setLabel(NodeType.MAX);
@@ -341,7 +358,7 @@ public class StringGraph {
                         //appliedRule = true;
                     }
                     ++pos;
-                } while(pos < this.getSons().size() /*&& !appliedRule*/);
+                } while(pos < this.getSons().size() - 1/*&& !appliedRule*/);
 
                 /* fatto con il for dentro all'if precedente
                 if (appliedRule){
@@ -352,12 +369,18 @@ public class StringGraph {
 
         // RULE 4
         if (this.label == NodeType.CONCAT){
+            List<StringGraph> concatSonsToAdd = new ArrayList<>();
+            List<StringGraph> sonsToRemove = new ArrayList<>();
             for(StringGraph son : this.getSons()){
                 if(son.getLabel() == NodeType.CONCAT && son.getFathers().size() == 1){
-                    this.addAllSons(son.getSons());
-                    this.removeSon(son); // don't need for bc son has only one father
-                    son.removeAllSons(); // need to remove the sons' fathers lists
+                    concatSonsToAdd.addAll(son.getSons());
+                    sonsToRemove.add(son);
                 }
+            }
+            this.addAllSons(concatSonsToAdd);
+            for(StringGraph son : sonsToRemove){
+                son.removeAllFathers(); // don't need for bc son has only one father
+                son.removeAllSons(); // need to remove the sons' fathers lists
             }
         }
 
@@ -417,34 +440,38 @@ public class StringGraph {
         return this.label == NodeType.SIMPLE || (this.label == NodeType.CONCAT && this.getSons().size() == 0);
     }
 
-    @Override
-    public boolean equals(Object o){
-        assert o.getClass() != StringGraph.class;
-        StringGraph other = (StringGraph)o;
-        if (this.getSons().equals(other.getSons()) && this.getFathers().equals(other.getFathers())) {
-            int i = 0;
-            for (StringGraph nodeToCompare : this.getSons()) {
-                if (!nodeToCompare.equals(other.getSons().get(i)))
-                    return false;
-                ++i;
-            }
-
-            return true;
-                /*
-                if (!(nodeToCompare.equals(other.getSons().get(i)) &&
-                        nodeToCompare.equals(other.getFathers().get(i))))
-                    return false;
-                else
-                    if(!nodeToCompare.equals(other.getSons().get(i)))
-                        return false;
-
-
-                    for (StringGraph otherGraphToCompare : other.getSons())
-                        nodeToCompare.equals(otherGraphToCompare);*/
-
-        }
-        else return false;
-    }
+//    @Override
+//    public boolean equals(Object o){
+//        assert o.getClass() == StringGraph.class;
+//        StringGraph other = (StringGraph)o;
+//
+//        if (this.getLabel() == ((StringGraph) o).getLabel())
+//
+//
+//        if (this.getSons().equals(other.getSons()) && this.getFathers().equals(other.getFathers())) {
+//            int i = 0;
+//            for (StringGraph nodeToCompare : this.getSons()) {
+//                if (!nodeToCompare.equals(other.getSons().get(i)))
+//                    return false;
+//                ++i;
+//            }
+//
+//            return true;
+//                /*
+//                if (!(nodeToCompare.equals(other.getSons().get(i)) &&
+//                        nodeToCompare.equals(other.getFathers().get(i))))
+//                    return false;
+//                else
+//                    if(!nodeToCompare.equals(other.getSons().get(i)))
+//                        return false;
+//
+//
+//                    for (StringGraph otherGraphToCompare : other.getSons())
+//                        nodeToCompare.equals(otherGraphToCompare);*/
+//
+//        }
+//        else return false;
+//    }
 
     public StringGraph substring(int leftBound, int rightBound) {
 
@@ -613,7 +640,7 @@ public class StringGraph {
         Pair<StringGraph, StringGraph> nodesToCheck = null;
         if (root.wideningTopologicalClash(other)) {
             for (StringGraph son : other.getSons()) {
-                nodesToCheck = root.replacementRuleAux(son);
+                nodesToCheck = root.cycleInductionRuleAux(son);
                 if (!Objects.isNull(nodesToCheck))
                     break;
             }
@@ -809,5 +836,36 @@ public class StringGraph {
             }
             return false;
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder stringGraphToRepresent = new StringBuilder();
+
+        switch (this.label) {
+            case MAX:
+                return "MAX";
+            case EMPTY:
+                return "EMPTY";
+            case SIMPLE:
+                return this.character.toString();
+            case OR:
+                stringGraphToRepresent.append("OR[");
+                for (StringGraph son : this.getSons()) {
+                    stringGraphToRepresent.append(son.toString());
+                }
+                stringGraphToRepresent.append("]");
+                return stringGraphToRepresent.toString();
+            case CONCAT:
+                stringGraphToRepresent.append("CONCAT[");
+                for (StringGraph son : this.getSons()) {
+                    stringGraphToRepresent.append(son.toString());
+                }
+                stringGraphToRepresent.append("]");
+                return stringGraphToRepresent.toString();
+            default:
+                throw new WrongBuildStringGraphException(String.format("Type %s does not exists.", this.label));
+        }
+
     }
 }
