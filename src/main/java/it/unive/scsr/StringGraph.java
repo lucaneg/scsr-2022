@@ -154,8 +154,24 @@ public class StringGraph {
     }
 
     public void removeAllSons(){
-        for (StringGraph s : this.sons) {
-            this.removeSon(s);
+        for (StringGraph s : this.getSons()) {
+            s.getFathers().remove(this);
+        }
+        this.sons = new ArrayList<>();
+    }
+
+    public void removeAllFathers(){
+        for (StringGraph f : this.getFathers()) {
+            f.getSons().remove(this);
+        }
+        this.fathers = new ArrayList<>();
+    }
+
+    public void removeFathers(List<StringGraph> fathers) {
+        this.getFathers().removeAll(fathers);
+
+        for (StringGraph father : fathers) {
+            father.removeSon(this);
         }
     }
 
@@ -261,13 +277,15 @@ public class StringGraph {
 
         // RULE 6
         if (this.getLabel() == NodeType.OR){
+            ArrayList<StringGraph> sonsToRemove = new ArrayList<>();
             for(StringGraph son: this.getSons()) {
                 if (son.getLabel() == NodeType.OR && son.getFathers().size() == 1) {
-                    this.removeSon(son);
+                    sonsToRemove.add(son);
                     this.addAllSons(son.getSons());
                     son.removeAllSons();
                 }
             }
+            this.removeSons(sonsToRemove);
         }
 
         // RULE 7
@@ -289,12 +307,22 @@ public class StringGraph {
         if (this.getLabel() == NodeType.OR){
             for(StringGraph son: this.getSons()){
                 if (son.getLabel() == NodeType.OR && son.getFathers().size() > 1) {
-                    for(StringGraph father : son.getFathers()){
-                        if(!father.equals(this)) {
-                            father.removeSon(son);
+
+//                    List<StringGraph> sonsToRemove = new ArrayList<>();
+//                    for(StringGraph father : son.getFathers()){
+//                        if(!father.equals(this)) {
+//                            sonsToRemove.add(son);
+//                            father.addSon(this);
+//                        }
+//                    }
+
+                    for(StringGraph father : son.getFathers()) {
+                        if (!father.equals(this)) {
                             father.addSon(this);
                         }
                     }
+                    son.removeAllFathers();
+                    this.addSon(son);
                 }
             }
         }
@@ -351,10 +379,11 @@ public class StringGraph {
                         previousSibling.get().addAllSons(currentSibling.get().getSons()); // Adding currentSibling sons to previous sibling sons
                         currentSibling.get().removeAllSons();
 
+
                         for(StringGraph father : currentSibling.get().getFathers()){
                             father.addSon(previousSibling.get());
-                            father.removeSon(currentSibling.get());
                         }
+                        currentSibling.get().removeAllFathers();
                         //appliedRule = true;
                     }
                     ++pos;
@@ -484,8 +513,8 @@ public class StringGraph {
             }
 
             List<StringGraph> substringSons = new ArrayList<>();
-            for(int i = leftBound; i < rightBound - 1; ++i) {
-                substringSons.add(this.getSons().get(i));
+            for(int i = leftBound; i < rightBound; ++i) {
+                substringSons.add(new StringGraph(this.getSons().get(i).character.toString())); // father adding will be u
             }
             return new StringGraph(NodeType.CONCAT, substringSons, null);
         }
