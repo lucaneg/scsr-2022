@@ -1,7 +1,6 @@
 package it.unive.scsr;
 
 import it.unive.lisa.analysis.SemanticDomain;
-import it.unive.scsr.Exceptions.InvalidCharacterException;
 import it.unive.scsr.Exceptions.WrongBuildStringGraphException;
 import org.antlr.v4.runtime.misc.Pair;
 
@@ -12,13 +11,16 @@ import java.util.stream.Collectors;
 import static it.unive.lisa.analysis.SemanticDomain.Satisfiability.*;
 import static it.unive.scsr.StringGraph.NodeType.SIMPLE;
 
+/**
+ * StringGraph: base unit of abstract domain StringGraphDomain
+ */
 public class StringGraph {
 
     enum NodeType {
         CONCAT,
         OR,
-        EMPTY, // represent a simple node
-        MAX, // represent a simple node
+        EMPTY,
+        MAX,
         SIMPLE
     }
 
@@ -75,7 +77,7 @@ public class StringGraph {
         this.normalized = true;
         if (isStringInt(stringToRepresent)) {
             this.label = SIMPLE;
-            this.bound = Integer.parseInt(stringToRepresent);
+            this.setBound(Integer.parseInt(stringToRepresent));
         } else if (stringToRepresent.length() == 0) {
             this.label = NodeType.EMPTY;
         } else if (stringToRepresent.length() == 1) {
@@ -91,8 +93,18 @@ public class StringGraph {
 
     }
 
+    public StringGraph(NodeType label) {
+        assert(!(label == NodeType.CONCAT));
+        this.label = label;
+        this.sons = new ArrayList<>();
+        this.fathers = new ArrayList<>();
+    }
 
-
+    /**
+     * Try to convert a string to integer and return true if the conversion succeed.
+     * @param s string to check integer type
+     * @return true if string can be represented as an int value, false otherwise.
+     */
     private boolean isStringInt(String s) {
         try {
             Integer.parseInt(s);
@@ -102,6 +114,11 @@ public class StringGraph {
         }
     }
 
+    /**
+     * Manage mapping of a single character into a CHARACTER enum value.
+     * @param c character to map
+     * @return character mapped in CHARACTER enum value if possible, otherwise throw WrongBuildStringGraphException exception
+     */
     private static CHARACTER map(char c) {
         switch (c) {
             case 'a': return CHARACTER.a;
@@ -134,23 +151,28 @@ public class StringGraph {
         }
     }
 
-    public StringGraph(NodeType label) {
-        assert(!(label == NodeType.CONCAT));
-        this.label = label;
-        this.sons = new ArrayList<>();
-        this.fathers = new ArrayList<>();
-    }
-
+    /**
+     * Add {@code son} to current sons.
+     * @param son String graph to add as son.
+     */
     public void addSon(StringGraph son) {
         if (!this.sons.contains(son)) this.getSons().add(son);
         if (!son.getFathers().contains(this)) son.getFathers().add(this);
     }
 
+    /**
+     * Remove {@code son} from current sons.
+     * @param son String graph to be removed from sons.
+     */
     public void removeSon(StringGraph son){
         this.getSons().remove(son);
         son.getFathers().remove(this);
     }
 
+    /**
+     * Remove {@code sons} from current sons.
+     * @param sons list of sons to be removed from all sons.
+     */
     public void removeSons(List<StringGraph> sons) {
         this.getSons().removeAll(sons);
 
@@ -159,12 +181,19 @@ public class StringGraph {
         }
     }
 
+    /**
+     * Add {@code sons} to the current list of sons.
+     * @param sons list of sons to be added to all sons.
+     */
     public void addAllSons(List<StringGraph> sons){
         for(StringGraph s : sons) {
             this.addSon(s);
         }
     }
 
+    /**
+     * Remove all sons.
+     */
     public void removeAllSons(){
         for (StringGraph s : this.getSons()) {
             s.getFathers().remove(this);
@@ -172,19 +201,14 @@ public class StringGraph {
         this.sons = new ArrayList<>();
     }
 
+    /**
+     * Remove all fathers.
+     */
     public void removeAllFathers(){
         for (StringGraph f : this.getFathers()) {
             f.getSons().remove(this);
         }
         this.fathers = new ArrayList<>();
-    }
-
-    public void removeFathers(List<StringGraph> fathers) {
-        this.getFathers().removeAll(fathers);
-
-        for (StringGraph father : fathers) {
-            father.removeSon(this);
-        }
     }
 
     public NodeType getLabel() {
@@ -199,32 +223,17 @@ public class StringGraph {
         return sons;
     }
 
-    /*
-    public void setSons(List<StringGraph> sons) {
-        this.sons = sons;
-    }*/
     public List<StringGraph> getFathers() {
         return fathers;
     }
 
-    /*
-    public void setFathers(List<StringGraph> fathers) {
-        this.fathers = fathers;
-    }*/
+
     public void setNormalized(boolean normalized) {
         this.normalized = normalized;
     }
 
-    public boolean isNormalized() {
-        return normalized;
-    }
-
     public CHARACTER getCharacter() {
         return character;
-    }
-
-    public void setCharacter(CHARACTER character) {
-        this.character = character;
     }
 
     public Integer getBound() {
@@ -235,6 +244,10 @@ public class StringGraph {
         this.bound = bound;
     }
 
+    /**
+     * Compact the string graph by applying the 8 rule defined in the article
+     * <i>"Deriving Descriptions of Possible Values of Program Variables by Means of Abstract Interpretation"</i>
+     */
     protected void compact() {
         for (StringGraph s : this.getSons()){
             if (!(this.getFathers().contains(s))) {
@@ -256,9 +269,7 @@ public class StringGraph {
                     emptyNodes.add(son);
                 }
             }
-
             this.removeSons(emptyNodes);
-
         }
 
         // RULE 3
@@ -319,15 +330,6 @@ public class StringGraph {
         if (this.getLabel() == NodeType.OR){
             for(StringGraph son: this.getSons()){
                 if (son.getLabel() == NodeType.OR && son.getFathers().size() > 1) {
-
-//                    List<StringGraph> sonsToRemove = new ArrayList<>();
-//                    for(StringGraph father : son.getFathers()){
-//                        if(!father.equals(this)) {
-//                            sonsToRemove.add(son);
-//                            father.addSon(this);
-//                        }
-//                    }
-
                     for(StringGraph father : son.getFathers()) {
                         if (!father.equals(this)) {
                             father.addSon(this);
@@ -340,6 +342,10 @@ public class StringGraph {
         }
     }
 
+    /**
+     * Normalize the string graph by applying the 4 rules defined in the article
+     * <i>"A Suite of Abstract Domains for Static Analysis of String Values"</i>
+     */
     protected void normalize() {
         for (StringGraph s : this.getSons()){
             if (!(this.getFathers().contains(s)))
@@ -429,6 +435,10 @@ public class StringGraph {
         this.setNormalized(true);
     }
 
+    /**
+     * Check if inside a string graph we have a character {@code c} without an OR node presence.
+     * @param c character to check presence
+     */
     private boolean containsCharWithoutOR(CHARACTER c) {
         boolean result = false;
         if (this.label == SIMPLE) return this.character == c;
@@ -445,6 +455,10 @@ public class StringGraph {
         return result;
     }
 
+    /**
+     * Check if inside a string graph we have a character {@code c} or a MAX node.
+     * @param c character to check presence
+     */
     private boolean containsCharOrMax(CHARACTER c) {
         boolean result = false;
         if (this.label == SIMPLE) return this.character == c;
@@ -457,12 +471,20 @@ public class StringGraph {
         return result;
     }
 
+    /**
+     * Check if inside a string graph we have a character {@code c} presence.
+     * @param c character to check presence
+     */
     public SemanticDomain.Satisfiability contains(CHARACTER c) {
         if (!containsCharOrMax(c)) return NOT_SATISFIED;
         else if (containsCharWithoutOR(c)) return SATISFIED;
         else return UNKNOWN;
     }
 
+    /**
+     * Check if string graph denotation is not empty (i.e. the set of finite strings represented by a node n in the string graph T is said to be the
+     * denotation of the node n)
+     */
     private boolean nonEmptyDenotation() {
         boolean result;
         if(this.label == NodeType.CONCAT && this.getSons().size() > 0) {
@@ -480,39 +502,6 @@ public class StringGraph {
         }
         return this.label == SIMPLE || (this.label == NodeType.CONCAT && this.getSons().size() == 0);
     }
-
-//    @Override
-//    public boolean equals(Object o){
-//        assert o.getClass() == StringGraph.class;
-//        StringGraph other = (StringGraph)o;
-//
-//        if (this.getLabel() == ((StringGraph) o).getLabel())
-//
-//
-//        if (this.getSons().equals(other.getSons()) && this.getFathers().equals(other.getFathers())) {
-//            int i = 0;
-//            for (StringGraph nodeToCompare : this.getSons()) {
-//                if (!nodeToCompare.equals(other.getSons().get(i)))
-//                    return false;
-//                ++i;
-//            }
-//
-//            return true;
-//                /*
-//                if (!(nodeToCompare.equals(other.getSons().get(i)) &&
-//                        nodeToCompare.equals(other.getFathers().get(i))))
-//                    return false;
-//                else
-//                    if(!nodeToCompare.equals(other.getSons().get(i)))
-//                        return false;
-//
-//
-//                    for (StringGraph otherGraphToCompare : other.getSons())
-//                        nodeToCompare.equals(otherGraphToCompare);*/
-//
-//        }
-//        else return false;
-//    }
 
     public StringGraph substring(int leftBound, int rightBound) {
 

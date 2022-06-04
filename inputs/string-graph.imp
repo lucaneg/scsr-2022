@@ -1,13 +1,7 @@
 class stringGraphTests {
-    fsg;
-    ssg;
-    ~stringGraphTests() {
-        this.fsg = "firststringgraph";
-        this.ssg = "secondstringgraph";
-    }
 
     testingConcat() {
-        return strcat(this.fsg, this.ssg);
+        return strcat("hello", "world");
     }
 
     testingSubstring() {
@@ -37,7 +31,7 @@ class stringGraphTests {
 
 
     testingFull() {
-       def concatString = strcat("d", strcat("a",strcat("b","c")));
+       def concatString = strcat("a", strcat("b",strcat("c","d")));
        def z = "";
        if (strcon(concatString, "c"))
             z = strsub(concatString, "1", "3");

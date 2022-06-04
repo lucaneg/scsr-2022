@@ -14,7 +14,6 @@ import it.unive.lisa.symbolic.value.operator.ternary.StringSubstring;
 import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
 import org.antlr.v4.runtime.misc.Pair;
 
-import static it.unive.scsr.StringGraph.buildMAX;
 import static it.unive.scsr.StringGraph.checkPartialOrder;
 
 
@@ -22,6 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * StringGraphDomain: abstract domain used to represent strings
+ */
 public class StringGraphDomain extends BaseNonRelationalValueDomain<StringGraphDomain> {
 
     private final StringGraph stringGraph;
