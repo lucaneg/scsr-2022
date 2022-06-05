@@ -2,6 +2,7 @@ package it.unive.scsr;
 
 import it.unive.lisa.analysis.SemanticDomain;
 import it.unive.scsr.Exceptions.WrongBuildStringGraphException;
+import org.antlr.v4.runtime.atn.SemanticContext;
 import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.*;
@@ -556,6 +557,11 @@ public class StringGraph {
         return new StringGraph(MAX);
     }
 
+    /**
+     * BOTTOM is an element of S that is smaller than every other element of S (the least element).
+     * where S a subset of a partially ordered set (poset)
+     * @return string graph representing BOTTOM in our String Graph domain.
+     */
     public static StringGraph buildEMPTY() {
         return new StringGraph(EMPTY); //
     }
@@ -592,6 +598,13 @@ public class StringGraph {
 
     }
 
+    /**
+     * Auxiliary function to check the partial order between two string graphs.
+     * @param first string graph to be compared
+     * @param second string graph to be compared
+     * @param edges set of pairs of already visited string graphs
+     * @return true if {@code first} is contained or equal to {@code second}, false otherwise.
+     */
     public static boolean checkPartialOrder (StringGraph first, StringGraph second, List<Pair<StringGraph, StringGraph>> edges) {
         Pair<StringGraph, StringGraph> currentEdge = new Pair<>(first, second);
         if (edges.contains(currentEdge)) return true;
@@ -631,6 +644,12 @@ public class StringGraph {
         }
     }
 
+    /**
+     *
+     * @param stringGraphList collection of string graph to consider
+     * @param stringGraph string graph to compare1
+     * @return the list of string graphs belonging to {@code stringGraphList} which have the same label as {@code stringGraph}
+     */
     public static List<StringGraph> labelEqualitySet(Collection<StringGraph> stringGraphList, StringGraph stringGraph) {
         List<StringGraph> result = new ArrayList<>();
         for(StringGraph s : stringGraphList) {
@@ -641,6 +660,17 @@ public class StringGraph {
         return result;
     }
 
+    /**
+     * The correspondence set between two type graphs g1 and g2, denoted
+     * by c(g1, g2), is the smallest relation R closed by the following two rules:
+     * <ul>
+     *     <li>(root(gl), root(g2)) &#8712 R.</li>
+     *     <li>(v1 ,v2) &#8712 R & same-depth(v1, v2) & same-pf(v1,v2) =>
+     *          (succ(v1,i), succ(v2,i)) &#8712 R(1 &#8804 i &#8804 arity(v1)).</li>
+     * </ul>
+     * @param other string graph to compare
+     * @return true if correspondence set match, false otherwise
+     */
     private boolean correspondenceSet(StringGraph other) {
         // this g1
         // other g2
@@ -648,7 +678,12 @@ public class StringGraph {
         return !(this.depth(new HashSet<>()) == other.depth(new HashSet<>()) && this.getPrincipalLabels().equals(other.getPrincipalLabels()));
     }
 
-
+    /**
+     * Introduce a cycle in the graph by replacing edges to a vertex with edges to one of its ancestors.
+     * @param root string graph where we check for sons matching condition (see condition on method <i>cycleInductionRuleAux</i>)
+     * @param other string graph where we check for son-ancestor matching condition (see method <i>cycleInductionRuleAux</i>)
+     * @return string graph with edges replaced
+     */
     public static StringGraph cycleInductionRule(StringGraph root, StringGraph other) {
         Pair<StringGraph, StringGraph> nodesToCheck = null;
         if (root.wideningTopologicalClash(other)) {
@@ -696,6 +731,18 @@ public class StringGraph {
         return pair; // No ancestor for root node
     }
 
+    /**
+     * Replaces the ancestor by an upper bound of the vertices.
+     * Applies when a cycle cannot be introduced because the denotation of the ancestor is not greater than the vertices in the clash.
+     * <br>
+     * CR(go,gn) = {(Vn,Va) | (Vo,Vn) &#8712 WTC(go,gn) &
+     * Va &#8712 ancestor (Vn) & &#8989(Va &#8805 Vn) &
+     * depth(Vo) &#8805 depth(va) & (pf(Vn) &#8838 pf(Va) V depth(Vo) < depth(Vn))}
+     *
+     * @param root string graph where we check for sons matching condition (see condition on method <i>replacementRuleAux</i>)
+     * @param other string graph where we check for son-ancestor matching condition (see method <i>replacementRuleAux</i>)
+     * @return
+     */
     public static StringGraph replacementRule(StringGraph root, StringGraph other) {
 
         Pair<StringGraph, StringGraph> nodesToCheck = null;
@@ -743,6 +790,15 @@ public class StringGraph {
 
     }
 
+    /**
+     * The set of widening clashes, defined as follows.
+     * <br>
+     * WTC(g1, g2) = {(v1,v2) | (v1,v2) &#8712 TC(g1,g2) & pf(v2) &#8800 &#8709 &
+     * ( (pf(v1) &#8800 pf(v2) & same-depth(v1, v2)) &#8744
+     * depth(v1) < depth(v2) )}
+     * @param other string graph to check for condition matching
+     * @return true if there exist two vertexes in g1 and g2 matching the above condition, false otherwise
+     */
     private boolean wideningTopologicalClash(StringGraph other) {
 
         if (this.topologicalClash(other)) {
@@ -859,9 +915,9 @@ public class StringGraph {
     }
 
     /**
-     * In `this` string graph, replace nodeToBeReplaced with nodeToReplace
-     * @param nodeToBeReplaced
-     * @param replacingNode
+     * In `this` string graph, replace nodeToBeReplaced with replacingNode
+     * @param nodeToBeReplaced node to be replaced
+     * @param replacingNode replacing node
      */
     private void replaceVertex(StringGraph nodeToBeReplaced, StringGraph replacingNode) {
         if (this.searchForNode(nodeToBeReplaced, new HashSet<>()) && this.searchForNode(replacingNode, new HashSet<>())) {
@@ -879,6 +935,11 @@ public class StringGraph {
         }
     }
 
+    /**
+     * In current string graph replace {@code edgeToBeRemoved} with {@code edgeToBeAdded}.
+     * @param edgeToBeRemoved edge to be removed
+     * @param edgeToBeAdded edge to be replaced
+     */
     private void replaceEdge(StringGraph edgeToBeRemoved, StringGraph edgeToBeAdded) {
         if (this.searchForNode(edgeToBeRemoved, new HashSet<>()) && this.searchForNode(edgeToBeAdded, new HashSet<>())) {
             this.removeSon(edgeToBeRemoved);
