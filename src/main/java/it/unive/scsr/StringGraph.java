@@ -10,7 +10,10 @@ import java.util.stream.Collectors;
 
 import static it.unive.lisa.analysis.SemanticDomain.Satisfiability.*;
 import static it.unive.scsr.StringGraph.NodeType.SIMPLE;
-
+import static it.unive.scsr.StringGraph.NodeType.MAX;
+import static it.unive.scsr.StringGraph.NodeType.EMPTY;
+import static it.unive.scsr.StringGraph.NodeType.CONCAT;
+import static it.unive.scsr.StringGraph.NodeType.OR;
 /**
  * StringGraph: base unit of abstract domain StringGraphDomain
  */
@@ -53,14 +56,13 @@ public class StringGraph {
 
         if (allSonsSIMPLE) this.normalized = true;
 
-
         // Checking CONCAT and OR node have at least one node
-        if ((label == NodeType.CONCAT && (this.getSons().size() == 0)) ||
-            (label == NodeType.OR && (this.getSons().size() == 0)))
+        if ((label == CONCAT && (this.getSons().isEmpty())) ||
+            (label == OR && (this.getSons().isEmpty())))
             throw new WrongBuildStringGraphException("OR node and CONCAT node must have at least one son.");
 
         // We make sure root has no sons
-        if (this.label == NodeType.MAX && this.getSons().size() > 0)
+        if (this.label == MAX && this.getSons().size() > 0)
             throw new WrongBuildStringGraphException("MAX node cannot have son.");
 
         if (this.label == SIMPLE && Objects.isNull(this.character)) {
@@ -79,12 +81,16 @@ public class StringGraph {
             this.label = SIMPLE;
             this.setBound(Integer.parseInt(stringToRepresent));
         } else if (stringToRepresent.length() == 0) {
-            this.label = NodeType.EMPTY;
+            this.label = EMPTY;
         } else if (stringToRepresent.length() == 1) {
             this.label = SIMPLE;
-            this.character = StringGraph.map(stringToRepresent.charAt(0));
+            try {
+                this.character = StringGraph.map(stringToRepresent.charAt(0));
+            } catch (WrongBuildStringGraphException e) {
+                this.label = MAX;
+            }
         } else {
-            this.label = NodeType.CONCAT;
+            this.label = CONCAT;
             for (int i = 0; i < stringToRepresent.length(); i++) {
                 StringGraph son = new StringGraph(SIMPLE, new ArrayList<>(), StringGraph.map(stringToRepresent.charAt(i)));
                 this.addSon(son);
@@ -94,7 +100,7 @@ public class StringGraph {
     }
 
     public StringGraph(NodeType label) {
-        assert(!(label == NodeType.CONCAT));
+        assert(!(label == CONCAT));
         this.label = label;
         this.sons = new ArrayList<>();
         this.fathers = new ArrayList<>();
@@ -227,6 +233,9 @@ public class StringGraph {
         return fathers;
     }
 
+    public boolean isNormalized() {
+        return normalized;
+    }
 
     public void setNormalized(boolean normalized) {
         this.normalized = normalized;
@@ -256,16 +265,16 @@ public class StringGraph {
         }
 
         // RULE 1
-        if (this.getLabel() == NodeType.CONCAT && !nonEmptyDenotation()) {
-            this.setLabel(NodeType.EMPTY);
+        if (this.getLabel() == CONCAT && !nonEmptyDenotation()) {
+            this.setLabel(EMPTY);
             this.removeAllSons();
         }
 
         // RULE 2
-        if (this.getLabel() == NodeType.OR){
+        if (this.getLabel() == OR){
             List<StringGraph> emptyNodes = new ArrayList<>();
             for(StringGraph son: this.getSons()) {
-                if (son.getLabel() == NodeType.EMPTY) {
+                if (son.getLabel() == EMPTY) {
                     emptyNodes.add(son);
                 }
             }
@@ -273,36 +282,36 @@ public class StringGraph {
         }
 
         // RULE 3
-        if (this.getLabel() == NodeType.OR && this.getSons().contains(this)){
+        if (this.getLabel() == OR && this.getSons().contains(this)){
             this.removeSon(this);
         }
 
         // RULE 4
-        if (this.getLabel() == NodeType.OR && this.getSons().size() == 0){
-            this.setLabel(NodeType.EMPTY);
+        if (this.getLabel() == OR && this.getSons().isEmpty()){
+            this.setLabel(EMPTY);
             this.removeAllSons();
         }
 
         // RULE 5
-        if (this.getLabel() == NodeType.OR){
+        if (this.getLabel() == OR){
             boolean hasMaxSon = false;
             for(StringGraph son: this.getSons()) {
-                if (son.getLabel() == NodeType.MAX) {
+                if (son.getLabel() == MAX) {
                     hasMaxSon = true;
                     break;
                 }
             }
             if (hasMaxSon){
-                this.setLabel(NodeType.MAX);
+                this.setLabel(MAX);
                 this.removeAllSons();
             }
         }
 
         // RULE 6
-        if (this.getLabel() == NodeType.OR){
+        if (this.getLabel() == OR){
             ArrayList<StringGraph> sonsToRemove = new ArrayList<>();
             for(StringGraph son: this.getSons()) {
-                if (son.getLabel() == NodeType.OR && son.getFathers().size() == 1) {
+                if (son.getLabel() == OR && son.getFathers().size() == 1) {
                     sonsToRemove.add(son);
                     this.addAllSons(son.getSons());
                     son.removeAllSons();
@@ -312,7 +321,7 @@ public class StringGraph {
         }
 
         // RULE 7
-        if (this.getLabel() == NodeType.OR && this.getSons().size() == 1){
+        if (this.getLabel() == OR && this.getSons().size() == 1){
             StringGraph son = this.getSons().get(0);
             this.setLabel(son.getLabel());
             this.removeAllSons();
@@ -327,9 +336,9 @@ public class StringGraph {
         }
 
         // RULE 8
-        if (this.getLabel() == NodeType.OR){
+        if (this.getLabel() == OR){
             for(StringGraph son: this.getSons()){
-                if (son.getLabel() == NodeType.OR && son.getFathers().size() > 1) {
+                if (son.getLabel() == OR && son.getFathers().size() > 1) {
                     for(StringGraph father : son.getFathers()) {
                         if (!father.equals(this)) {
                             father.addSon(this);
@@ -347,92 +356,91 @@ public class StringGraph {
      * <i>"A Suite of Abstract Domains for Static Analysis of String Values"</i>
      */
     protected void normalize() {
-        for (StringGraph s : this.getSons()){
-            if (!(this.getFathers().contains(s)))
-                s.normalize();
-        }
 
-        // RULE 1
-        if (this.getLabel() == NodeType.CONCAT && this.getSons().size() == 1) {
-            StringGraph s = this.getSons().get(0);
-            this.setLabel(s.getLabel());
-            this.removeAllSons();
-            this.addAllSons(s.getSons());
-            for (StringGraph father : s.getFathers()){
-                father.addSon(this);
-                father.removeSon(s);
-            }
-        }
+        if (!this.isNormalized()) {
 
-        // RULE 2
-        if (this.getLabel() == NodeType.CONCAT) {
-            boolean allMaxSons = true;
-            for(StringGraph son: this.getSons()){
-                if (son.getLabel() != NodeType.MAX) {
-                    allMaxSons = false;
-                    break;
-                }
+            for (StringGraph s : this.getSons()) {
+                if (!(this.getFathers().contains(s)))
+                    s.normalize();
             }
-            if(allMaxSons){
-                this.setLabel(NodeType.MAX);
+
+            // RULE 1
+            if (this.getLabel() == CONCAT && this.getSons().size() == 1) {
+                StringGraph s = this.getSons().get(0);
+                this.setLabel(s.getLabel());
                 this.removeAllSons();
-            }
-        }
-
-        // RULE 3
-        if (this.getLabel() == NodeType.CONCAT) {
-            if (this.getSons().size() >= 2) {
-                AtomicReference<StringGraph> previousSibling;
-                AtomicReference<StringGraph> currentSibling;
-
-                int pos = 0;
-                //boolean appliedRule = false;
-                do {
-                    previousSibling = new AtomicReference<>(this.getSons().get(pos));
-                    currentSibling = new AtomicReference<>(this.getSons().get(++pos));
-
-                    if (previousSibling.get().getLabel() == NodeType.CONCAT && currentSibling.get().getLabel() == NodeType.CONCAT &&
-                            (previousSibling.get().getFathers().size() == 1) && (currentSibling.get().getFathers().size() == 1)) {
-
-                        previousSibling.get().addAllSons(currentSibling.get().getSons()); // Adding currentSibling sons to previous sibling sons
-                        currentSibling.get().removeAllSons();
-
-
-                        for(StringGraph father : currentSibling.get().getFathers()){
-                            father.addSon(previousSibling.get());
-                        }
-                        currentSibling.get().removeAllFathers();
-                        //appliedRule = true;
-                    }
-                    ++pos;
-                } while(pos < this.getSons().size() - 1/*&& !appliedRule*/);
-
-                /* fatto con il for dentro all'if precedente
-                if (appliedRule){
-                    this.removeSon(currentSibling.get());
-                }*/
-            }
-        }
-
-        // RULE 4
-        if (this.label == NodeType.CONCAT){
-            List<StringGraph> concatSonsToAdd = new ArrayList<>();
-            List<StringGraph> sonsToRemove = new ArrayList<>();
-            for(StringGraph son : this.getSons()){
-                if(son.getLabel() == NodeType.CONCAT && son.getFathers().size() == 1){
-                    concatSonsToAdd.addAll(son.getSons());
-                    sonsToRemove.add(son);
+                this.addAllSons(s.getSons());
+                for (StringGraph father : s.getFathers()) {
+                    father.addSon(this);
+                    father.removeSon(s);
                 }
             }
-            this.addAllSons(concatSonsToAdd);
-            for(StringGraph son : sonsToRemove){
-                son.removeAllFathers(); // don't need for bc son has only one father
-                son.removeAllSons(); // need to remove the sons' fathers lists
-            }
-        }
 
-        // At the end we know for sure that our StringGraph is normalized
-        this.setNormalized(true);
+            // RULE 2
+            if (this.getLabel() == CONCAT) {
+                boolean allMaxSons = true;
+                for (StringGraph son : this.getSons()) {
+                    if (son.getLabel() != MAX) {
+                        allMaxSons = false;
+                        break;
+                    }
+                }
+                if (allMaxSons) {
+                    this.setLabel(MAX);
+                    this.removeAllSons();
+                }
+            }
+
+            // RULE 3
+            if (this.getLabel() == CONCAT) {
+                if (this.getSons().size() >= 2) {
+                    AtomicReference<StringGraph> previousSibling;
+                    AtomicReference<StringGraph> currentSibling;
+
+                    int pos = 0;
+                    do {
+                        previousSibling = new AtomicReference<>(this.getSons().get(pos));
+                        currentSibling = new AtomicReference<>(this.getSons().get(++pos));
+
+                        if (previousSibling.get().getLabel() == CONCAT && currentSibling.get().getLabel() == CONCAT &&
+                                (previousSibling.get().getFathers().size() == 1) && (currentSibling.get().getFathers().size() == 1)) {
+
+                            previousSibling.get().addAllSons(currentSibling.get().getSons()); // Adding currentSibling sons to previous sibling sons
+                            currentSibling.get().removeAllSons();
+
+
+                            for (StringGraph father : currentSibling.get().getFathers()) {
+                                father.addSon(previousSibling.get());
+                            }
+                            currentSibling.get().removeAllFathers();
+                            //appliedRule = true;
+                        }
+                        ++pos;
+                    } while (pos < this.getSons().size() - 1);
+
+                }
+            }
+
+            // RULE 4
+            if (this.label == CONCAT) {
+                List<StringGraph> concatSonsToAdd = new ArrayList<>();
+                List<StringGraph> sonsToRemove = new ArrayList<>();
+                for (StringGraph son : this.getSons()) {
+                    if (son.getLabel() == CONCAT && son.getFathers().size() == 1) {
+                        concatSonsToAdd.addAll(son.getSons());
+                        sonsToRemove.add(son);
+                    }
+                }
+                this.addAllSons(concatSonsToAdd);
+                for (StringGraph son : sonsToRemove) {
+                    son.removeAllFathers(); // don't need for bc son has only one father
+                    son.removeAllSons(); // need to remove the sons' fathers lists
+                }
+            }
+
+            // At the end we know for sure that our StringGraph is normalized
+            this.setNormalized(true);
+        }
     }
 
     /**
@@ -442,10 +450,10 @@ public class StringGraph {
     private boolean containsCharWithoutOR(CHARACTER c) {
         boolean result = false;
         if (this.label == SIMPLE) return this.character == c;
-        else if (this.label == NodeType.MAX) return true;
-        else if (this.label == NodeType.EMPTY) return false;
-        else if (this.label == NodeType.OR) return false;
-        else if (this.label == NodeType.CONCAT) {
+        else if (this.label == MAX) return true;
+        else if (this.label == EMPTY) return false;
+        else if (this.label == OR) return false;
+        else if (this.label == CONCAT) {
 
             for (StringGraph s : this.getSons()) {
                 result = result || s.containsCharWithoutOR(c);
@@ -462,7 +470,7 @@ public class StringGraph {
     private boolean containsCharOrMax(CHARACTER c) {
         boolean result = false;
         if (this.label == SIMPLE) return this.character == c;
-        else if (this.label == NodeType.MAX) return true;
+        else if (this.label == MAX) return true;
         else {
             for (StringGraph s : this.getSons()) {
                 result = result || s.containsCharOrMax(c);
@@ -487,26 +495,33 @@ public class StringGraph {
      */
     private boolean nonEmptyDenotation() {
         boolean result;
-        if(this.label == NodeType.CONCAT && this.getSons().size() > 0) {
+        if(this.label == CONCAT && this.getSons().size() > 0) {
             result = true;
             for (StringGraph son : this.getSons()) {
                 result = result && son.nonEmptyDenotation();
             }
             return result;
-        } else if(this.label == NodeType.OR) {
+        } else if(this.label == OR) {
             result = false;
             for (StringGraph son : this.getSons()) {
                 result = result || son.nonEmptyDenotation();
             }
             return result;
         }
-        return this.label == SIMPLE || (this.label == NodeType.CONCAT && this.getSons().size() == 0);
+        return this.label == SIMPLE || (this.label == CONCAT && this.getSons().isEmpty());
     }
 
+    /**
+     * Return a string graph representing the string between string {@code leftBound} and {@code rightBound}.
+     * @param leftBound index of the first character of the substring to be taken
+     * @param rightBound index (excluded) of the last character of the substring to be taken
+     * @return substring if bounds are correctly specified, TOP otherwise
+     */
     public StringGraph substring(int leftBound, int rightBound) {
 
-        if (this.getLabel() == NodeType.CONCAT &&
-            this.getSons().size() >= rightBound - 1) {
+        if (this.getLabel() == CONCAT &&
+            this.getSons().size() >= rightBound && 
+            leftBound >= 0) {
 
             for(int i = 0; i < rightBound; ++i) {
                 if (this.getSons().get(i).getLabel() != SIMPLE)
@@ -517,87 +532,52 @@ public class StringGraph {
             for(int i = leftBound; i < rightBound; ++i) {
                 substringSons.add(new StringGraph(this.getSons().get(i).character.toString())); // father adding will be u
             }
-            return new StringGraph(NodeType.CONCAT, substringSons, null);
+            return new StringGraph(CONCAT, substringSons, null);
         }
         return StringGraph.buildMAX();
     }
 
+    /**
+     * Concatenate two string graphs in a single string graph.
+     * @param left left string graph to be concatenated
+     * @param right left string graph to be concatenated
+     * @return a concatenated string graph
+     */
     public static StringGraph buildCONCAT(StringGraph left, StringGraph right) {
-        return new StringGraph(NodeType.CONCAT, new ArrayList<>(List.of(left, right)), null);
+        return new StringGraph(CONCAT, new ArrayList<>(List.of(left, right)), null);
     }
 
+    /**
+     * TOP is an element of S that is larger than every other element of S (the greatest element).
+     * where S a subset of a partially ordered set (poset)
+     * @return string graph representing TOP in our String Graph domain.
+     */
     public static StringGraph buildMAX() {
-        return new StringGraph(NodeType.MAX); // Represent TOP in the domain
+        return new StringGraph(MAX);
     }
 
     public static StringGraph buildEMPTY() {
-        return new StringGraph(NodeType.EMPTY); //
+        return new StringGraph(EMPTY); //
     }
 
-//    private int checkIndegree(StringGraph fixedNode) {
-//        if (stringGraph.getSons().size() == 0) {
-//            return 0;
-//        } else if ((!Objects.isNull(stringGraph.father)) && (stringGraph.getSons().size() == 0)){
-//            return 1;
-//        } else if (stringGraph.father) {
-//
-//        }
-//        else {
-//            int indegreeNumber = 0;
-//            for(StringGraph s: stringGraph.getSons())
-//                indegreeNumber += checkIndegree(s);
-//
-//            return Objects.isNull(father) ? indegreeNumber: ++indegreeNumber;
-//        }
-
-
-//        int indegree = 0;
-//        for(StringGraph s: fixedNode.getSons()){
-//            if (!s.equals(fixedNode.father)) // non tiene in considerazione gli indegree verso il basso
-//                indegree += checkIndegreeAUX(fixedNode, s);
-//            else if (fixedNode.father.equals(s)) {
-//
-//            }
-//        }
-//        // checks if I have a higher node that points to me
-//        if ((!Objects.isNull(fixedNode.father)))
-//            ++indegree;
-//
-//        return indegree;
-//
-//    }
-//
-//    // return the number of nodes in the tree stringGraph that point to original
-//    private int checkIndegreeAUX(StringGraph fixedNode, StringGraph son){
-//        //prblema del caso base perchè una foglia può puntare verso su
-//        int result = 0; // leaf case
-//
-//        // if a son does have an inner edge to myself, and it is my direct son
-//        if (fixedNode.getSons().contains(son) && fixedNode.father.equals(son))
-//            return 1;
-//
-//        if (son.getSons().contains(fixedNode))
-//            result = 1;
-//
-//        for(StringGraph s: son.getSons()) {
-//            if (!s.equals(son.father))
-//                result += checkIndegreeAUX(fixedNode, s);
-//            else if (son.father.equals(fixedNode))
-//                ++result;
-//        }
-//        return result;
-//    }
-
-
+    /**
+     * Get principal labels of our string graph. Principal labels are based on the definition of principal nodes.
+     * Set of principal label are SIMPLE, CONCAT, MAX, OR, and EMPTY.
+     * @return collection returning string graph's principal labels
+     */
     private Collection<NodeType> getPrincipalLabels() {
 
         // Check for nodes in principal nodes and extract their labels
         return getPrincipalNodes().stream().map(StringGraph::getLabel).collect(Collectors.toSet());
     }
 
+    /**
+     * Get principal nodes of our string graph.
+     * @return collection returning string graph's principal nodes
+     */
     Collection<StringGraph> getPrincipalNodes() {
 
-        if (this.label != NodeType.OR)
+        if (this.label != OR)
             return Set.of(this);
         else {
             Collection<StringGraph> principalSubNodes = new HashSet<>();
@@ -615,9 +595,9 @@ public class StringGraph {
     public static boolean checkPartialOrder (StringGraph first, StringGraph second, List<Pair<StringGraph, StringGraph>> edges) {
         Pair<StringGraph, StringGraph> currentEdge = new Pair<>(first, second);
         if (edges.contains(currentEdge)) return true;
-        else if (second.getLabel() == StringGraph.NodeType.MAX) return true;
-        else if (first.getLabel() == StringGraph.NodeType.CONCAT &&
-                second.getLabel() == StringGraph.NodeType.CONCAT &&
+        else if (second.getLabel() == MAX) return true;
+        else if (first.getLabel() == CONCAT &&
+                second.getLabel() == CONCAT &&
                 first.getSons().size() == second.getSons().size() &&
                 first.getSons().size() > 0) {
             boolean result = true;
@@ -627,8 +607,8 @@ public class StringGraph {
             }
             return result;
         }
-        else if (first.getLabel() == StringGraph.NodeType.OR &&
-                second.getLabel() == StringGraph.NodeType.OR){
+        else if (first.getLabel() == OR &&
+                second.getLabel() == OR){
             boolean result = true;
             edges.add(new Pair<>(first, second));
             for(StringGraph son : first.getSons()){
@@ -636,7 +616,7 @@ public class StringGraph {
             }
             return result;
         }
-        else if (second.getLabel() == StringGraph.NodeType.OR) {
+        else if (second.getLabel() == OR) {
             boolean result = false;
             List<StringGraph> labelEqualitySons = labelEqualitySet(second.getPrincipalNodes(), first);
             if (labelEqualitySons.size() > 0) {
@@ -662,7 +642,10 @@ public class StringGraph {
     }
 
     private boolean correspondenceSet(StringGraph other) {
-        return !(this.depth() == other.depth() && this.getPrincipalLabels().equals(other.getPrincipalLabels()));
+        // this g1
+        // other g2
+
+        return !(this.depth(new HashSet<>()) == other.depth(new HashSet<>()) && this.getPrincipalLabels().equals(other.getPrincipalLabels()));
     }
 
 
@@ -677,12 +660,21 @@ public class StringGraph {
         }
 
         if (!Objects.isNull(nodesToCheck)) {
-            other.replaceEdge(nodesToCheck.a, nodesToCheck.b);
+            other.replaceEdge(nodesToCheck.a, nodesToCheck.b);  // vertex from other is replaced with ancestor from other
             return other;
         }
         return null;
     }
 
+    /**
+     * Return a pair of string graph matching the condition:
+     * <ul>
+     *     <li>Cl(go, gn) ={((v, Vn)(V, va) | (vo, Vn) &#8712 WTC(go, gn) & Va &#8712 ancestor(vn) & (va &#8805 Vn) &
+     *      depth(vo) > depth(va) & v = ca(vo, Vn) ↓ 2}.</li>
+     * </ul>
+     * @param other string graph representing vn vertex
+     * @return pair of string graph if condition above match
+     */
     private Pair<StringGraph, StringGraph> cycleInductionRuleAux(StringGraph other) {
         Collection<StringGraph> ancestors = other.getAncestors();
         Pair<StringGraph, StringGraph> pair = null;
@@ -693,9 +685,9 @@ public class StringGraph {
         for (StringGraph son : this.getSons()) {
             for (StringGraph ancestor : ancestors) {
                 if (checkPartialOrder(other, ancestor, new ArrayList<>()) &&
-                    son.depth() >= ancestor.depth() &&
-                    son.depth() - other.depth() < 2) {
-                    pair = new Pair<>(ancestor, other);
+                    son.depth(new HashSet<>()) >= ancestor.depth(new HashSet<>()) &&
+                    son.depth(new HashSet<>()) - other.depth(new HashSet<>()) < 2) {
+                    pair = new Pair<>(other, ancestor);
                     break;
                 }
             }
@@ -716,12 +708,17 @@ public class StringGraph {
         }
 
         if (!Objects.isNull(nodesToCheck)) {
-            other.replaceVertex(nodesToCheck.a, nodesToCheck.b);
+            other.replaceVertex(nodesToCheck.a, nodesToCheck.b); // ancestor is replaced
             return other;
         }
         return null;
     }
 
+    /**
+     * Check for ancestor, other, and son triple matching <i>replacementRule</i> condition.
+     * @param other vertex where we check for ancestor matching condition
+     * @return pair of vertex-ancestor to be replaced
+     */
     private Pair<StringGraph, StringGraph> replacementRuleAux(StringGraph other) {
 
         Collection<StringGraph> ancestors = other.getAncestors();
@@ -733,8 +730,9 @@ public class StringGraph {
         for (StringGraph son : this.getSons()) {
             for (StringGraph ancestor : ancestors) {
                 if (!checkPartialOrder(other, ancestor, new ArrayList<>()) &&
-                    son.depth() >= ancestor.depth() &&
-                    (ancestor.getPrincipalLabels().contains(other.getPrincipalLabels()) || son.depth() < other.depth())) {
+                    son.depth(new HashSet<>()) >= ancestor.depth(new HashSet<>()) &&
+                    (ancestor.getPrincipalLabels().contains(other.getPrincipalLabels()) ||
+                    son.depth(new HashSet<>()) < other.depth(new HashSet<>()))) {
                     pair = new Pair<>(ancestor, other);
                     break;
                 }
@@ -753,6 +751,12 @@ public class StringGraph {
         return false;
     }
 
+
+    /**
+     * Checks for other sons and current string graph sons matching the condition. (check <i>wideningTopologicalClash</i> method)
+     * @param other string graph to recursively compare vertexes
+     * @return true if condition is matched, false otherwise
+     */
     private boolean wideningTopologicalClashAux(StringGraph other) {
 
         boolean result = false;
@@ -767,10 +771,19 @@ public class StringGraph {
         }
 
         return result || (!other.getPrincipalLabels().isEmpty() &&
-                         (!this.getPrincipalLabels().equals(other.getPrincipalLabels()) && this.depth() == other.depth()) ||
-                           this.depth() < other.depth());
+                         (!this.getPrincipalLabels().equals(other.getPrincipalLabels()) && this.depth(new HashSet<>()) == other.depth(new HashSet<>())) ||
+                           this.depth(new HashSet<>()) < other.depth(new HashSet<>()));
     }
 
+    /**
+     * Topological clash occurs when two vertices in correspondence have different
+     * pf-sets or different depths.
+     *
+     * TC(g1, g2) = {(v1, v2) | (v1, v2) &#8712 C(g1, g2) &
+     * &#8989(same-depth(v1,v2) & same-pf(v1,v2)}.
+     * @param other string graph matching the condition above
+     * @return true if condition is matched, false otherwise
+     */
     private boolean topologicalClash(StringGraph other) {
 
         if (checkPartialOrder(this, other, new ArrayList<>())) {
@@ -779,6 +792,11 @@ public class StringGraph {
         return false;
     }
 
+    /**
+     * Check for other and current string graph matching the condition.
+     * @param other vertex to check for condition matching (check method <i>topologicalClash</i>)
+     * @return true if condition is matched, false otherwise
+     */
     private boolean topologicalClashAux(StringGraph other) {
 
         boolean result = false;
@@ -786,16 +804,20 @@ public class StringGraph {
         // Checking all left sub nodes with all right sub nodes
         for (StringGraph son : this.getSons()) {
             for (StringGraph otherSon : other.getSons()) {
-                result = result || son.topologicalClash(otherSon);
+                result = result || son.topologicalClashAux(otherSon);
                 if (result)
                     break;
             }
         }
 
         return result || (this.correspondenceSet(other) &&
-                !(this.depth() == other.depth() && this.getPrincipalLabels().equals(other.getPrincipalLabels())));
+                !(this.depth(new HashSet<>()) == other.depth(new HashSet<>()) && this.getPrincipalLabels().equals(other.getPrincipalLabels())));
     }
 
+    /**
+     * Get ancestors of current string graph.
+     * @return collection containing the ancestor of the current string graph
+     */
     private Collection<StringGraph> getAncestors() {
 
         Collection<StringGraph> ancestors = new HashSet<>();
@@ -812,15 +834,27 @@ public class StringGraph {
         return ancestors;
     }
 
-    private int depth() {
-        if(this.getSons().size() == 0) {
-            return 1;
+    /**
+     * @return depth of a string graph
+     */
+    private int depth(Set<StringGraph> alreadyVisitedNodes) {
+        if(alreadyVisitedNodes.contains(this)){ // already visited node case
+            return - 1;
+        }
+
+        alreadyVisitedNodes.add(this);
+
+        if(this.getFathers().isEmpty()) { // root case
+            return 0;
         }
         else {
             int graphDepth = 0;
-            for(StringGraph son : this.getSons())
-                graphDepth += son.depth();
-            return ++graphDepth; // Considering root of a complete graph
+
+            for(StringGraph father : this.getFathers()){
+                graphDepth += father.depth(alreadyVisitedNodes);
+            }
+
+            return graphDepth + 1; // Considering root of a complete graph
         }
     }
 
@@ -830,7 +864,7 @@ public class StringGraph {
      * @param replacingNode
      */
     private void replaceVertex(StringGraph nodeToBeReplaced, StringGraph replacingNode) {
-        if (this.searchForNode(nodeToBeReplaced) && this.searchForNode(replacingNode)) {
+        if (this.searchForNode(nodeToBeReplaced, new HashSet<>()) && this.searchForNode(replacingNode, new HashSet<>())) {
             List<StringGraph> fathers = nodeToBeReplaced.getFathers();
             List<StringGraph> sons = nodeToBeReplaced.getSons();
 
@@ -846,23 +880,31 @@ public class StringGraph {
     }
 
     private void replaceEdge(StringGraph edgeToBeRemoved, StringGraph edgeToBeAdded) {
-        if (this.searchForNode(edgeToBeRemoved) && this.searchForNode(edgeToBeAdded)) {
+        if (this.searchForNode(edgeToBeRemoved, new HashSet<>()) && this.searchForNode(edgeToBeAdded, new HashSet<>())) {
             this.removeSon(edgeToBeRemoved);
             this.addSon(edgeToBeAdded);
         }
     }
 
-    private boolean searchForNode(StringGraph node) {
+    /**
+     * Search for {@code node} in the string graph.
+     * @param node node to search in the string graph
+     * @return true if node is contained, false otherwise
+     */
+    private boolean searchForNode(StringGraph node, Set<StringGraph> alreadyVisited) {
         boolean result;
 
+        alreadyVisited.add(this);
         if(this.equals(node)) {
             return true;
         }
         else {
             for (StringGraph son : this.getSons()) {
-                result = son.searchForNode(node);
-                if (result)
-                    return true;
+                if(!alreadyVisited.contains(son)) {
+                    result = son.searchForNode(node, alreadyVisited);
+                    if (result)
+                        return true;
+                }
             }
             return false;
         }
