@@ -1,128 +1,120 @@
 package it.unive.scsr;
 
+
 public class Index {
 
-	public static final Index INFINITY = null; 
+	public static final Index INFINITY = new Index();
 
-	private Integer value;
-
+	private final Integer value;
 
 	public Index() {
-		this.value=null;
+		value = null;
 	}
 
-	public Index(Integer value) {
-		if(value<0) {
-			value=0;
-		}
-		this.value = value; 
+	public Index(int value) {
+		this.value = value;
 	}
 
 	public Integer getValue() {
 		return value;
 	}
 
-	public void setValue(Integer value) {
-		this.value = value;
-	} 
-
-	public Index plus(Index other) {
-		Index result=Index.INFINITY;
-		if(this.value!=null && other.value!=null) {
-			result = new Index(other.value + this.value);
-		}
-		return result; 
+	public Index plus(Index other) { 
+		if(this.value==null || other==null) {
+			return INFINITY;
+		}else {
+			return new Index(this.value + other.getValue());
+		} 
 	}
+
 
 	public Index minus(Index other) {
-		Index result=Index.INFINITY;
-		if(this.value!=null && other.value!=null) {
-			result = new Index(other.value - this.value);
+		if(this.value ==null) {
+			return INFINITY;
+		}else {
+			return new Index(this.value - other.getValue());
 		}
-		return result;
-	}
-
-	public boolean less(Index other) {
-		boolean result=true;
-		if(this.value!=null && other.value!=null) {
-			result=this.value < other.getValue();
-		}
-		if(this.value==null && other.value!=null) {
-			result = false; 
-		}
-		return result;
-	}
-
-	public boolean greater(Index other) {
-		boolean result=false;
-		if(this.value!=null && other.value!=null) {
-			result=this.value > other.getValue();
-		}
-		if(this.value==null && other.value!=null) {
-			result = true; 
-		}
-		return result;
-	}
-
-	public boolean lessOrEqual(Index other) {
-		boolean result=true;
-		if(this.value!=null && other.value!=null) {
-			result=this.value <= other.getValue();
-		}
-		if(this.value==null && other.value!=null) {
-			result = false; 
-		}
-		return result;
-	}
-
-	public boolean greaterOrEqual(Index other) {
-		boolean result=false;
-		if(this.value!=null && other.value!=null) {
-			result=this.value >= other.getValue();
-		}
-		if(this.value==null && other.value!=null) {
-			result = true; 
-		}
-		return result;
-	}
-
-	public static Index min(Index fistIndex, Index secondIndex) {
-		return fistIndex.less(secondIndex)?fistIndex:secondIndex; 
-	}
-
-	public static Index max(Index fistIndex, Index secondIndex) {
-		return fistIndex.greater(secondIndex)?fistIndex:secondIndex; 
 	}
 
 
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((value == null) ? 0 : value.hashCode());
-		return result;
+	public boolean less(Integer other) { 
+		if((other == null) || (this.value != null && value < other)) {
+			return true; 
+		}else {
+			return false; 
+		}
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
+	public boolean less(Index other) { 
+		return this.less(other.value); 
+	}
+
+
+	public boolean lessOrEqual(Integer other) { 
+		if((other == null) || (this.value != null && value <= other)) {
+			return true; 
+		}else {
+			return false; 
+		}
+	}
+
+	public boolean lessOrEqual(Index other) { 
+		return this.lessOrEqual(other.value);
+	}
+
+
+	public boolean greater(Integer other) { 
+		if((other != null) && (this.value == null || value > other)) {
 			return true;
-		if (obj == null)
+		}else {
+			return false; 
+		}
+	}
+
+	public boolean greater(Index other) { 
+		return this.greater(other.value); 
+	}
+
+	public boolean greaterOrEqual(Integer other) { 	
+		if((other != null) && (this.value == null || value >= other)) {
+			return true;
+		}else {
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Index other = (Index) obj;
-		if (value == null) {
-			if (other.value != null)
-				return false;
-		} else if (!value.equals(other.value))
-			return false;
-		return true;
+		}
+	}
+
+	public boolean greaterOrEqual(Index other) { 
+		return this.greaterOrEqual(other.value); 
+
+	}
+
+	public static Index max(Index i1, Index i2) {
+		return i1.greater(i2) ? i1 : i2;
 	}
 
 
+	public static Index min(Index i1, Index i2) {
+		return i1.less(i2) ? i1 : i2;
+	}
 
+	
+	public boolean equals(Integer other) { 
+		if((this.value == null && other == null)|| this.value != null && value.equals(other)){
+			return true; 
+		}else {
+			return false; 
+		}
+	}
 
-
+	public boolean equals(Index other) {
+		return this.equals(other.value);
+	}
+	
+	public String toString() {
+		if(this.value==null) {
+			return "INFINTIY";
+		}else {
+			return value.toString();
+		}
+	}
 }

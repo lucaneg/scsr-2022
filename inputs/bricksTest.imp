@@ -1,0 +1,25 @@
+class Bricks {
+
+    Test_STR_CAT() {
+        def s1 = "s1";
+        def s2 = "s2";
+        return strcat(s1, s2);
+    }
+
+
+	Test_STR_CON() {
+        def s = "Test2";
+        if (strcon(s, "t")) {
+            s = "ok";
+        }
+        return s;
+    }
+
+ 
+    Test_STR_SUB(condition) {
+   		def s = "test_str_sub"; 
+		s=  strsub(s, 1, 3);
+        return s; 
+    }
+
+}
