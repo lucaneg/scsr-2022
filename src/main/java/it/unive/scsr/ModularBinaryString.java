@@ -24,7 +24,7 @@ public class ModularBinaryString implements Comparable<ModularBinaryString>{
         if(value.compareTo(overflowAt) < 0){
             value = binaryModule(value, overflowAt);
         }
-        return new ModularBinaryString(value, overflowAt); //TODO: VERY IMPORTANT if binaryValue is greater than perform module
+        return new ModularBinaryString(value, overflowAt);
     }
 
     private ModularBinaryString(String binaryValue, String overflowAt) {
@@ -73,8 +73,8 @@ public class ModularBinaryString implements Comparable<ModularBinaryString>{
         String counter = "0".repeat(getBinaryString().length());
         String sum = "0".repeat(2 * getBinaryString().length());
         while (!reduced(counter).equals(reduced(b.getBinaryString()))) {
-            sum = binarySum(sum, getBinaryString(), false);
-            counter = binarySum(counter, "1", false);
+            sum = binarySum(sum, getBinaryString(), true);
+            counter = binarySum(counter, "1", true);
         }
         return new ModularBinaryString(reduced(binaryModule(sum, getOverflowAt())), getOverflowAt());
     }
@@ -90,6 +90,10 @@ public class ModularBinaryString implements Comparable<ModularBinaryString>{
 
     public ModularBinaryString editMaxSigned(String maxValue) throws SumOverflowException {
         return ModularBinaryString.fromStrings(this.binaryString, maxValue);
+    }
+
+    public char msb(){
+        return this.getBinaryString().charAt(0);
     }
 
     /**********************************************************/
@@ -195,7 +199,7 @@ public class ModularBinaryString implements Comparable<ModularBinaryString>{
         a = align(aligned[0], a)[1];
         String thisMinusA = binarySubtraction(aligned[0], a, true);
         String toCompareMinusA = binarySubtraction(aligned[1], a, true);
-        return thisMinusA.compareTo(toCompareMinusA); //TODO: check if align is required
+        return thisMinusA.compareTo(toCompareMinusA);
     }
 
     @Override

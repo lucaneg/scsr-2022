@@ -8,20 +8,17 @@ import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.BinaryExpression;
 import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.operator.AdditionOperator;
-import it.unive.lisa.symbolic.value.operator.DivisionOperator;
 import it.unive.lisa.symbolic.value.operator.Multiplication;
 import it.unive.lisa.symbolic.value.operator.SubtractionOperator;
 import it.unive.lisa.symbolic.value.operator.binary.*;
-import it.unive.lisa.symbolic.value.operator.ternary.TernaryOperator;
 import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
 import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
-import it.unive.lisa.type.BooleanType;
 import it.unive.lisa.type.NumericType;
 import it.unive.lisa.type.Type;
-import it.unive.lisa.type.TypeTokenType;
 import it.unive.lisa.type.common.*;
 
-import java.util.ArrayList;
+import java.math.BigInteger;
+import java.util.*;
 
 public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedIntervals>{
 
@@ -121,28 +118,27 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
 
     //Returns result of pseudo-join operation between this WrappedIntervals and another one (t) according to definition provided
     //For a nice visual explanation check Fig. 2 of the research paper
-    public WrappedIntervals pseudoJoin(WrappedIntervals t) throws ModularBinaryString.SumOverflowException {
-        if(this.isIncluded(t))
-            return t;
-        if(t.isIncluded(this))
-            return this;
-        if(t.includes(this.left) && t.includes(this.right) && this.includes(t.left) && this.includes(t.right))
-            return TOP;
-        if(t.includes(this.right) && this.includes(t.left))
-            return new WrappedIntervals(this.left, t.right, this.maxSigned);
-        if(this.includes(t.right) && t.includes(this.left))
-            return new WrappedIntervals(t.left, this.right, this.maxSigned);
-        WrappedIntervals bc = new WrappedIntervals(this.right, t.left, this.maxSigned);
-        WrappedIntervals da = new WrappedIntervals(t.right, this.left, this.maxSigned);
-        if( bc.cardinality() <= da.cardinality() || (bc.cardinality() == da.cardinality() && this.left.compareTo(t.left) <= 0))
-            return new WrappedIntervals(this.left, t.right, this.maxSigned);
-        else
-            return new WrappedIntervals(t.left, this.left, this.maxSigned);
+    public WrappedIntervals pseudoJoin(List<WrappedIntervals> sList) throws ModularBinaryString.SumOverflowException {
+        WrappedIntervals f = bottom();
+        WrappedIntervals g = bottom();
+        sList.add(this);
+        sList.sort(Comparator.comparing((WrappedIntervals o) -> o.left));
+        for(WrappedIntervals s : sList)
+            if(s.equals(top()) || s.right.modularCompareTo(s.left, "0") <= 0)
+                f = f.extend(s);
+
+        for(WrappedIntervals s : sList){
+            g = g.bigger(f.gap(s));
+            f = f.extend(s);
+        }
+
+        return g.bigger(f.complement());
     }
+
 
     //Returns result of pseudo-meet operation between this WrappedIntervals and another one (t) according to definition provided
     public WrappedIntervals pseudoMeet(WrappedIntervals t) throws ModularBinaryString.SumOverflowException {
-        return (complement().pseudoJoin(t.complement())).complement();
+        return (complement().pseudoJoin(List.of(t.complement()))).complement();
     }
 
     //Returns result of gap operation between this WrappedIntervals and another one (t) according to definition provided
@@ -176,6 +172,103 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
         return t;
     }
 
+    public WrappedIntervals unsignedMult(WrappedIntervals t) throws ModularBinaryString.SumOverflowException {
+        BigInteger a = new BigInteger(this.left.getBinaryString(), 2);
+        BigInteger b = new BigInteger(this.right.getBinaryString(), 2);
+        BigInteger c = new BigInteger(t.left.getBinaryString(), 2);
+        BigInteger d = new BigInteger(t.right.getBinaryString(), 2);
+        if(b.multiply(d).subtract(a.multiply(c)).compareTo(new BigInteger(this.maxSigned, 2)) < 0)
+            return new WrappedIntervals(this.left.modularMultiplication(t.left), this.right.modularMultiplication(t.right), this.left.getOverflowAt());
+        return top();
+    }
+
+    public WrappedIntervals signedMult(WrappedIntervals t) throws ModularBinaryString.SumOverflowException {
+        char msbA = this.left.msb();
+        char msbB = this.right.msb();
+        char msbC = t.left.msb();
+        char msbD = t.right.msb();
+        BigInteger a = new BigInteger(this.left.getBinaryString(), 2);
+        BigInteger b = new BigInteger(this.right.getBinaryString(), 2);
+        BigInteger c = new BigInteger(t.left.getBinaryString(), 2);
+        BigInteger d = new BigInteger(t.right.getBinaryString(), 2);
+
+        if(msbA == msbB && msbA == msbC && msbC == msbD && b.multiply(d).subtract(a.multiply(c)).compareTo(new BigInteger(this.maxSigned, 2)) < 0)
+            return new WrappedIntervals(this.left.modularMultiplication(t.left), this.right.modularMultiplication(t.right), this.left.getOverflowAt());
+        else if (msbA == msbB && msbA == '1' && msbC == msbD && msbC == '0' && b.multiply(c).subtract(a.multiply(d)).compareTo(new BigInteger(this.maxSigned, 2)) < 0)
+            return new WrappedIntervals(this.left.modularMultiplication(t.right), this.right.modularMultiplication(t.left), this.left.getOverflowAt());
+        else if (msbA == msbB && msbA == '0' && msbC == msbD && msbC == '1' && a.multiply(d).subtract(b.multiply(c)).compareTo(new BigInteger(this.maxSigned, 2)) < 0)
+            return new WrappedIntervals(this.right.modularMultiplication(t.left), this.left.modularMultiplication(t.right), this.left.getOverflowAt());
+        return top();
+    }
+
+    public ArrayList<WrappedIntervals> nsplit() throws ModularBinaryString.SumOverflowException {
+        ArrayList<WrappedIntervals> result = new ArrayList<WrappedIntervals>();
+        WrappedIntervals np = new WrappedIntervals("0" + "1".repeat(this.maxSigned.length() - 1), "1" + "0".repeat(this.maxSigned.length() - 1),  this.maxSigned);
+        WrappedIntervals sp = new WrappedIntervals( "1".repeat(this.maxSigned.length()),  "0".repeat(this.maxSigned.length()),  this.maxSigned);
+        if(this.equals(bottom()))
+            return result;
+        else if(!np.isIncluded(this))
+            result.add(this);
+        else if(np.isIncluded(this)){
+            result.add(new WrappedIntervals(this.left, np.left, this.maxSigned));
+            result.add(new WrappedIntervals(np.right, this.right, this.maxSigned));
+        }
+        else if(this.equals(top())){
+            result.add(new WrappedIntervals(sp.left, np.left, this.maxSigned));
+            result.add(new WrappedIntervals(np.right, sp.right, this.maxSigned));
+        }
+        return result;
+    }
+
+    public ArrayList<WrappedIntervals> ssplit() throws ModularBinaryString.SumOverflowException {
+        ArrayList<WrappedIntervals> result = new ArrayList<WrappedIntervals>();
+        WrappedIntervals np = new WrappedIntervals("0" + "1".repeat(this.maxSigned.length() - 1), "1" + "0".repeat(this.maxSigned.length() - 1),  this.maxSigned);
+        WrappedIntervals sp = new WrappedIntervals( "1".repeat(this.maxSigned.length()),  "0".repeat(this.maxSigned.length()),  this.maxSigned);
+        if(this.equals(bottom()))
+            return result;
+        else if(!sp.isIncluded(this))
+            result.add(this);
+        else if(sp.isIncluded(this)){
+            result.add(new WrappedIntervals(this.left, sp.left, this.maxSigned));
+            result.add(new WrappedIntervals(sp.right, this.right, this.maxSigned));
+        }
+        else if(this.equals(top())){
+            result.add(new WrappedIntervals(np.right, sp.left, this.maxSigned));
+            result.add(new WrappedIntervals(sp.right, np.left, this.maxSigned));
+        }
+        return result;
+    }
+
+    public ArrayList<WrappedIntervals> cut() throws ModularBinaryString.SumOverflowException {
+        ArrayList<WrappedIntervals> result = new ArrayList<>();
+        for(WrappedIntervals v : this.nsplit()){
+            result.addAll(v.ssplit());
+        }
+        return result;
+    }
+
+    public ArrayList<WrappedIntervals> intersection(WrappedIntervals t) throws ModularBinaryString.SumOverflowException {
+        ArrayList<WrappedIntervals> result = new ArrayList<WrappedIntervals>();
+        if(this.equals(bottom()) || t.equals(bottom()))
+            return result;
+        else if(this.equals(t) || this.equals(top()))
+            result.add(t);
+        if(t.equals(top()))
+            result.add(this);
+        if(t.includes(this.right) && this.includes(t.left) && this.includes(t.right)) {
+            result.add(t);
+            result.add(this);
+        }
+        if(t.includes(this.left) && t.includes(this.right))
+            result.add(this);
+        if(t.includes(this.left) && this.includes(t.right) && ! t.includes(this.right) && ! this.includes(t.left))
+            result.add(new WrappedIntervals(this.left, t.right, this.maxSigned));
+        if(t.includes(this.right) && this.includes(t.left) && ! t.includes(this.left) && ! this.includes(t.right))
+            result.add(new WrappedIntervals(this.right, t.left, this.maxSigned));
+
+        return result;
+    }
+
     public long getUnsignedLeft(){
         return left.asUnsigned();
     }
@@ -194,8 +287,8 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
 
     public String getStringedInterval() throws ModularBinaryString.SumOverflowException {
         if(this.type == WrappedInterval.SIMPLE) {
-            String asSigned = " and sig[" + getSignedLeft() + ", " + getSignedRight() + "] ";
-            String asUnsigned = " = usig[" + getUnsignedLeft() + ", " + getUnsignedRight() + "]";
+            String asSigned = " s[" + getSignedLeft() + ", " + getSignedRight() + "] ";
+            String asUnsigned = ": u[" + getUnsignedLeft() + ", " + getUnsignedRight() + "]";
             return "[" + ModularBinaryString.reduced(left.getBinaryString()) + ", " + ModularBinaryString.reduced(right.getBinaryString()) + "] % " + left.getOverflowAt() + asUnsigned + asSigned;
         }
         if(this.type == WrappedInterval.TOP)
@@ -245,21 +338,21 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
                 return this;
             if(this.cardinality() >= Long.parseLong(this.maxSigned, 2))
                 return TOP;
-            if(this.pseudoJoin(other).equals(new WrappedIntervals(this.left, other.right, this.maxSigned))){
+            if(this.pseudoJoin(List.of(other)).equals(new WrappedIntervals(this.left, other.right, this.maxSigned))){
                 ModularBinaryString twoV = this.right.modularMultiplication(ModularBinaryString.fromStrings("2", this.right.getOverflowAt()));
                 WrappedIntervals c = new WrappedIntervals(this.left, twoV.modularSubtraction(this.left).modularSum(ModularBinaryString.getOne(this.right.getOverflowAt())), this.maxSigned); //[u, 2v-u+1]
-                return new WrappedIntervals(this.left, other.right, this.maxSigned).pseudoJoin(c);
+                return new WrappedIntervals(this.left, other.right, this.maxSigned).pseudoJoin(List.of(c));
             }
-            if(this.pseudoJoin(other).equals(new WrappedIntervals(other.left, this.right, this.maxSigned))){
+            if(this.pseudoJoin(List.of(other)).equals(new WrappedIntervals(other.left, this.right, this.maxSigned))){
                 ModularBinaryString twoU = this.left.modularMultiplication(ModularBinaryString.fromStrings("2", this.left.getOverflowAt()));
                 WrappedIntervals c = new WrappedIntervals(twoU.modularSubtraction(this.right).modularSubtraction(ModularBinaryString.getOne(this.right.getOverflowAt())), this.right, this.maxSigned); //[2u-v-1, v]
-                return new WrappedIntervals(other.left, this.right, this.maxSigned).pseudoJoin(c);
+                return new WrappedIntervals(other.left, this.right, this.maxSigned).pseudoJoin(List.of(c));
             }
             if(other.includes(this.left) && other.includes(this.right)){
                 ModularBinaryString twoV = this.right.modularMultiplication(ModularBinaryString.fromStrings("2", this.right.getOverflowAt()));
                 ModularBinaryString twoU = this.left.modularMultiplication(ModularBinaryString.fromStrings("2", this.left.getOverflowAt()));
                 WrappedIntervals c = new WrappedIntervals(other.left, other.left.modularSum(twoV).modularSubtraction(twoU).modularSum(ModularBinaryString.getOne(this.right.getOverflowAt())), this.maxSigned);//[x, x+2v-2u+1]
-                return new WrappedIntervals(other.left, other.right, this.maxSigned).pseudoJoin(c);
+                return new WrappedIntervals(other.left, other.right, this.maxSigned).pseudoJoin(List.of(c));
             }
             return TOP;
         } catch (ModularBinaryString.SumOverflowException e) {
@@ -330,6 +423,7 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
 
     @Override
     protected WrappedIntervals evalTypeConv(BinaryExpression conv, WrappedIntervals sx, WrappedIntervals dx, ProgramPoint pp) throws SemanticException {
+        //No check needed: in any case the target type will be bigger than the current.
         Type type = conv.getRuntimeTypes().first();
         long    memorySize = 0;
         if(type.equals(Int8.INSTANCE) || type.equals(UInt8.INSTANCE)){
@@ -344,6 +438,7 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
         if(memorySize != 0){
             String maxInt = Long.toBinaryString((long)Math.pow(2, memorySize));
             try {
+                //Correctness of conversion is guaranteed by constructor that prepends zeroes to the new string
                 return new WrappedIntervals(sx.left.getBinaryString(), sx.right.getBinaryString(), maxInt);
             } catch (ModularBinaryString.SumOverflowException e) {
                 throw new SemanticException(e);
@@ -354,6 +449,8 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
 
     @Override
     protected WrappedIntervals evalTypeCast(BinaryExpression cast, WrappedIntervals sx, WrappedIntervals dx, ProgramPoint pp) throws SemanticException {
+        //Checking that target type size is not smaller than current one.
+        //Check performed in constructor of BinaryString
         return evalTypeConv(cast, sx, dx, pp);
     }
 
@@ -403,10 +500,13 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
                 return top();
             }
             else if(operator instanceof Multiplication){
-                //TODO: implement
-            }
-            else if(operator instanceof DivisionOperator){
-                //TODO: implement
+                List<WrappedIntervals> cutSx = correctedSx.cut();
+                List<WrappedIntervals> cutDx = correctedDx.cut();
+                List<WrappedIntervals> unsignedProducts = new ArrayList<>();
+                for(WrappedIntervals csx : cutSx)
+                    for(WrappedIntervals cdx: cutDx)
+                        unsignedProducts.addAll(csx.unsignedMult(cdx).intersection(csx.signedMult(cdx)));
+                return unsignedProducts.remove(0).pseudoJoin(unsignedProducts);
             }
         }
         catch (ModularBinaryString.SumOverflowException e){
@@ -414,12 +514,6 @@ public class WrappedIntervals extends BaseNonRelationalValueDomain<WrappedInterv
         }
 
         return bottom();
-    }
-
-
-    @Override
-    protected WrappedIntervals evalTernaryExpression(TernaryOperator operator, WrappedIntervals sx, WrappedIntervals middle, WrappedIntervals dx, ProgramPoint pp) throws SemanticException {
-        return super.evalTernaryExpression(operator, sx, middle, dx, pp);
     }
 
 
