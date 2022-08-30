@@ -1,0 +1,30 @@
+class Suffisso{
+	prog1(){
+        		def query = "SELECT RETAIL FROM INVENTORY WHERE ";
+        		def l = 1;
+        		if(l != null)
+        			query = query + "WHOLESALE " + l + " AND ";
+        		def per = "SELECT TYPECODE, TYPEDESC FROM TYPES WHERE NAME = 'fish' OR NAME = 'meat'";
+        		query = query + "TYPE IN " + per;
+        		return query;
+        	}
+
+        prog2(){
+            	def x= "a";
+            	def cond = true;
+            	while(cond)
+            		x = "0" + x + "1";
+            	return x;
+            }
+
+    	prog3(){
+    		    def a= "sinistro";
+    		    def b= "destro";
+    		    def c=strcat(a,b);
+    		    if(strcon(c,"i"))
+    		         b="contiene";
+    		    else
+    		         b="nonContiene";
+    		    return b;
+    	    }
+}
